@@ -8,5 +8,4 @@ public interface ColumnCollectionHandler {
 	List<ColumnHandler> getColumnList();
 	void convertDataType();
     String getSQLScript();
-    String getTest();
 }
