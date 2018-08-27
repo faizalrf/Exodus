@@ -216,7 +216,8 @@ public class ExodusWorker {
 						BatchCounter++;
 						
 						TargetCon.getDBConnection().commit();
-
+						
+						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
 						if (BatchCounter % 10 == 0) {
 							//Seconds Taken from Start to Now!
 							SecondsTaken = ChronoUnit.SECONDS.between(StartDT, LocalTime.now());
