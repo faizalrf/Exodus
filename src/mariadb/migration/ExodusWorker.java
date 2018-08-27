@@ -62,7 +62,6 @@ public class ExodusWorker {
 		Statement SourceStatementObj, TargetStetementObj;
 		
 		if (DeltaProcessing) {
-			//TODO Build the Delta Logic in the SELECT Query
 			SourceSelectSQL = Table.getDeltaSelectScript();
 			TotalRecords = Table.getDeltaRecordCount();
 		} else {
@@ -92,14 +91,12 @@ public class ExodusWorker {
 		try {
 			SourceStatementObj = SourceCon.getDBConnection().createStatement();
 			SourceResultSetObj = SourceStatementObj.executeQuery(SourceSelectSQL);
-			//System.out.println(SourceSelectSQL);
 			
 			//Get the Meta data of the Source ResultSet, this will be used to get the list of columns in the ResultSet.
 			SourceResultSetMeta = SourceResultSetObj.getMetaData();
 	        ColumnCount = SourceResultSetMeta.getColumnCount();
 	        PreparedStmt = TargetCon.getDBConnection().prepareStatement(TargetInsertSQL);
 	        //Parse through the source query result-set!
-	        //! //TODO BLOB TEST ALL 
 	        
 	        ErrorString="";
 	        BatchRowCounter=0;
@@ -216,7 +213,7 @@ public class ExodusWorker {
 						BatchCounter++;
 						
 						TargetCon.getDBConnection().commit();
-						
+
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
 						if (BatchCounter % 10 == 0) {
 							//Seconds Taken from Start to Now!
@@ -263,6 +260,7 @@ public class ExodusWorker {
 	        SourceCon.DisconnectDB();
 		}
 		
+		System.out.println();
 		return MigratedRows;
 	}
 }
