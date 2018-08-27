@@ -7,13 +7,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-
-import mariadb.migration.mysql.MySQLConnect;
 
 public class ExodusWorker {
 	private boolean DeltaProcessing=false;
