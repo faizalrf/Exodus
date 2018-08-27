@@ -16,7 +16,8 @@ public class Exodus {
             for (TableHandler Tab : oSchema.getTables()) {
                 if (!Tab.getMigrationSkipped()) {
                 	MySQLExodusSingle SingleTable = new MySQLExodusSingle(Tab, "MIGRATE");
-                	SingleTable.start();
+                    SingleTable.start();
+                    System.out.println("Thread Started!");
                 }
             }
         }
