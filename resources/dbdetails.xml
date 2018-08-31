@@ -5,13 +5,13 @@
 		<Password>!QAZ2wsx3edc</Password>
 		<HostName>192.168.56.150</HostName>
 		<PortNumber>3306</PortNumber>
-		<DatabaseName>WORLD</DatabaseName>
+		<DatabaseName>mysql</DatabaseName>
 	</DataProvider>
 	<DataProvider type="MariaDB">
 		<UserName>migration</UserName>
 		<Password>password</Password>
 		<HostName>192.168.56.250</HostName>
 		<PortNumber>3306</PortNumber>
-		<DatabaseName>employees</DatabaseName>
+		<DatabaseName>mysql</DatabaseName>
 	</DataProvider>
 </DataSources>

@@ -266,7 +266,7 @@ public class ExodusWorker {
 		LocalTime StartDT;
 		LocalTime EndDT;
 	
-	    int ColumnCount, BatchRowCounter, IntValue, OverFlow, PackedBatchSize, BatchCounter=0;
+	    int ColumnCount, BatchRowCounter, IntValue, OverFlow, PackedBatchSize, BatchCounter=0, BulkColumnInd=0;
 		
 		byte[] BlobObj;
 		double DoubleValue;
@@ -326,89 +326,89 @@ public class ExodusWorker {
 	        while (SourceResultSetObj.next()) {
 				try {
 			        for (int Col = 1; Col <= ColumnCount; Col++) {
-			            ColumnType = SourceResultSetMeta.getColumnTypeName(Col);
+						BulkColumnInd++;
+			            ColumnType = SourceResultSetMeta.getColumnTypeName(BulkColumnInd);
 
 			            switch (ColumnType) {
 		                	case "INTEGER":
-			                	IntValue = SourceResultSetObj.getInt(Col);
+			                	IntValue = SourceResultSetObj.getInt(BulkColumnInd);
 			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(Col, java.sql.Types.INTEGER);
+			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.INTEGER);
 			                    else
-			                    	PreparedStmt.setInt(Col, IntValue);
+			                    	PreparedStmt.setInt(BulkColumnInd, IntValue);
 			                    break;
-			                case "VARCHAR": PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
+			                case "VARCHAR": PreparedStmt.setString(BulkColumnInd, SourceResultSetObj.getString(BulkColumnInd));
 		                    	break;
-			                case "CHAR": PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
+			                case "CHAR": PreparedStmt.setString(BulkColumnInd, SourceResultSetObj.getString(BulkColumnInd));
 			                    break;
-			                case "TIMESTAMP": PreparedStmt.setTimestamp(Col, SourceResultSetObj.getTimestamp(Col)); 
+			                case "TIMESTAMP": PreparedStmt.setTimestamp(BulkColumnInd, SourceResultSetObj.getTimestamp(BulkColumnInd)); 
 		                    	break;
-			                case "DATE": PreparedStmt.setDate(Col, SourceResultSetObj.getDate(Col));
+			                case "DATE": PreparedStmt.setDate(BulkColumnInd, SourceResultSetObj.getDate(BulkColumnInd));
 			                    break;
-			                case "TIME": PreparedStmt.setTime(Col, SourceResultSetObj.getTime(Col));
+			                case "TIME": PreparedStmt.setTime(BulkColumnInd, SourceResultSetObj.getTime(BulkColumnInd));
 			                    break;
 			                case "BOOL": 
 			                case "BOOLEAN": 
 			                case "TINYINT": 
 			                case "TINYINT UNSIGNED": 
-			                    IntValue = SourceResultSetObj.getInt(Col);
+			                    IntValue = SourceResultSetObj.getInt(BulkColumnInd);
 			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(Col, java.sql.Types.TINYINT);
+			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.TINYINT);
 			                    else
-			                    	PreparedStmt.setInt(Col, IntValue);
+			                    	PreparedStmt.setInt(BulkColumnInd, IntValue);
 			                    break;
 			                case "SMALLINT": 
 			                case "SMALLINT UNSIGNED": 
-			                    IntValue = SourceResultSetObj.getInt(Col);
+			                    IntValue = SourceResultSetObj.getInt(BulkColumnInd);
 			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(Col, java.sql.Types.SMALLINT);
+			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.SMALLINT);
 			                    else
-			                    	PreparedStmt.setInt(Col, IntValue);
+			                    	PreparedStmt.setInt(BulkColumnInd, IntValue);
 			                    break;
 			                case "BIGINT": 
 			                case "BIGINT UNSIGNED": 
-			                    LongValue = SourceResultSetObj.getLong(Col);
+			                    LongValue = SourceResultSetObj.getLong(BulkColumnInd);
 			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(Col, java.sql.Types.BIGINT);
+			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.BIGINT);
 			                    else
-			                    	PreparedStmt.setLong(Col, LongValue);
+			                    	PreparedStmt.setLong(BulkColumnInd, LongValue);
 			                    break;                                
 			                case "DOUBLE":
-			                	DoubleValue = SourceResultSetObj.getDouble(Col);
+			                	DoubleValue = SourceResultSetObj.getDouble(BulkColumnInd);
 			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(Col, java.sql.Types.DOUBLE);
+			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.DOUBLE);
 			                    else
-			                    	PreparedStmt.setDouble(Col, DoubleValue);
+			                    	PreparedStmt.setDouble(BulkColumnInd, DoubleValue);
 			                    break;
 			                case "DECIMAL": 
-			                    BigDecimalValue = SourceResultSetObj.getBigDecimal(Col);
+			                    BigDecimalValue = SourceResultSetObj.getBigDecimal(BulkColumnInd);
 			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(Col, java.sql.Types.DECIMAL);
+			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.DECIMAL);
 			                    else
-			                    	PreparedStmt.setBigDecimal(Col, BigDecimalValue);
+			                    	PreparedStmt.setBigDecimal(BulkColumnInd, BigDecimalValue);
 			                    break;
 			                case "REAL":
 			                case "FLOAT":
-			                    FloatValue = SourceResultSetObj.getFloat(Col);
+			                    FloatValue = SourceResultSetObj.getFloat(BulkColumnInd);
 			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(Col, java.sql.Types.REAL);
+			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.REAL);
 			                    else
-			                    	PreparedStmt.setFloat(Col, FloatValue);
+			                    	PreparedStmt.setFloat(BulkColumnInd, FloatValue);
 			                    break;
 			                case "TINYBLOB":
 			                case "BLOB":
 			                case "MEDIUMBLOB":
 			                case "LONGBLOB":
-			                	BlobObj = SourceResultSetObj.getBytes(Col);
+			                	BlobObj = SourceResultSetObj.getBytes(BulkColumnInd);
 			                	if (BlobObj != null) 
-			                		//Use setBytes / getBytes for BLOB
-			                		PreparedStmt.setBytes(Col, BlobObj);
+			                		PreparedStmt.setBytes(BulkColumnInd, BlobObj);
 			                	else   
-			                		PreparedStmt.setNull(Col, java.sql.Types.BLOB);
+			                		PreparedStmt.setNull(BulkColumnInd, java.sql.Types.BLOB);
 			                    break;
 			                case "CLOB": 
-			                	PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
+			                	PreparedStmt.setString(BulkColumnInd, SourceResultSetObj.getString(BulkColumnInd));
 			                    break;
-			                case "SQLXML": PreparedStmt.setClob(Col, SourceResultSetObj.getClob(Col));
+			                case "SQLXML": PreparedStmt.setClob(BulkColumnInd, SourceResultSetObj.getClob(BulkColumnInd));
 			                    break;
 			                default: 
 			                	ErrorString += "\nUnknown Data Type: " + Table.getFullTableName() + "(" + SourceResultSetMeta.getColumnName(Col) + "(" + SourceResultSetMeta.getColumnTypeName(Col) + "))";

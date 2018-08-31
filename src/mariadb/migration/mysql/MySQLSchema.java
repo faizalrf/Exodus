@@ -38,7 +38,7 @@ public class MySQLSchema implements SchemaHandler {
         	oResultSet = oStatement.executeQuery(ScriptSQL);
             
             while (oResultSet.next()) {
-            	SchemaScript = "CREATE DATABASE " + oResultSet.getString("SCHEMA_NAME") + " CHARACTER SET " + oResultSet.getString("DEFAULT_COLLATION_NAME") + " COLLATE " + oResultSet.getString("DEFAULT_COLLATION_NAME");
+            	SchemaScript = "CREATE DATABASE IF NOT EXISTS " + oResultSet.getString("SCHEMA_NAME") + " CHARACTER SET " + oResultSet.getString("DEFAULT_COLLATION_NAME") + " COLLATE " + oResultSet.getString("DEFAULT_COLLATION_NAME");
             	//Read the Tables List for the Current Schema.
             	setTables();
             	
