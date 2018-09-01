@@ -2,7 +2,6 @@ package mariadb.migration.mysql;
 
 import mariadb.migration.DBConHandler;
 import mariadb.migration.MariaDBConnect;
-import mariadb.migration.ExodusProgress;
 import mariadb.migration.ExodusWorker;
 import mariadb.migration.TableHandler;
 import mariadb.migration.Util;
@@ -33,9 +32,6 @@ public class MySQLExodusMulti implements Runnable {
 			MigrationTask = "SKIP";
 		}
 	}
-	
-	//TODO Change this to Multi / Single Thread option!!!
-	//Think Think!!!
 
 	public void run() {
     	try {

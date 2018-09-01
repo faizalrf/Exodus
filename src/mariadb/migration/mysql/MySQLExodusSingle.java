@@ -3,7 +3,6 @@ package mariadb.migration.mysql;
 import java.sql.SQLException;
 import mariadb.migration.DBConHandler;
 import mariadb.migration.MariaDBConnect;
-import mariadb.migration.ExodusProgress;
 import mariadb.migration.ExodusWorker;
 import mariadb.migration.TableHandler;
 import mariadb.migration.Util;
