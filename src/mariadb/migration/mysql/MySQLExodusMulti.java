@@ -1,5 +1,7 @@
 package mariadb.migration.mysql;
 
+import com.sun.xml.internal.ws.api.ComponentFeature.Target;
+
 import mariadb.migration.DBConHandler;
 import mariadb.migration.MariaDBConnect;
 import mariadb.migration.ExodusWorker;
@@ -43,7 +45,10 @@ public class MySQLExodusMulti implements Runnable {
 			System.out.println("Exception While running Main Thread!");
 			new Logger(".//logs//Exodus.err", true, "Exception While running Main Thread - " + e.getMessage());
 			e.printStackTrace();
-    	}
+    	} finally {
+			SourceCon.DisconnectDB();
+			TargetCon.DisconnectDB();
+		}
     }
     
 	//Trigger the Thread for a given Table!

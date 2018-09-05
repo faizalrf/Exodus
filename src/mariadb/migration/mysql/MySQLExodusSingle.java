@@ -37,6 +37,9 @@ public class MySQLExodusSingle {
 		} catch (SQLException e) {
 			new Logger(".//logs//Exodus.err", true, e.getMessage());
 			e.printStackTrace();
+		} finally {
+			SourceCon.DisconnectDB();
+			TargetCon.DisconnectDB();
 		}
 	}
 }

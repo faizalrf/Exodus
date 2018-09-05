@@ -56,6 +56,7 @@ public class MySQLConnect implements DBConHandler {
     public void DisconnectDB() {
         try {
             dbConnection.close();
+            //System.out.println("*** Connection Closed ***");
         } catch (SQLException e) {
             System.out.println("****** ERROR ******");
             System.out.println("Unable to Disconnect from : " + ConnectionName + " -> " + dbUrl);

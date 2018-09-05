@@ -836,9 +836,5 @@ Query OK, 1 row affected (0.001 sec)
 
 MariaDB [test_db]> commit;
 Query OK, 0 rows affected (0.000 sec)
-
 ```
 
-Login to MySQL and verify.
-```
-```

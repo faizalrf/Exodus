@@ -77,6 +77,8 @@ public class ExodusWorker {
 				TableLog.WriteLog("Failed to create target table, Process aborted!");
 				return -1;
 			}
+			new Logger(Util.getPropertyValue("DDLPath") + "/" + Table.getFullTableName() + ".sql", false, Table.getTableScript());
+
 		}
 		
 	    //Calculate How many extra records after perfect batches of BATCH_SIZE
@@ -95,7 +97,6 @@ public class ExodusWorker {
 		try {
 			SourceStatementObj = SourceCon.getDBConnection().createStatement();
 			SourceResultSetObj = SourceStatementObj.executeQuery(SourceSelectSQL);
-			
 			//Get the Meta data of the Source ResultSet, this will be used to get the list of columns in the ResultSet.
 			SourceResultSetMeta = SourceResultSetObj.getMetaData();
 	        ColumnCount = SourceResultSetMeta.getColumnCount();
