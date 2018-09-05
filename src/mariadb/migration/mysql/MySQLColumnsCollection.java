@@ -76,7 +76,6 @@ public class MySQLColumnsCollection implements ColumnCollectionHandler {
 	}
 
 	public void convertDataType() {
-		// TODO Auto-generated method stub
 
 	}
 

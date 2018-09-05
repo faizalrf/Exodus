@@ -10,12 +10,13 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
 public class ExodusWorker {
-	private boolean DeltaProcessing=false;
-	private String MigrationTask;
+	private boolean DeltaProcessing=false, TableAlreadyMigrated=false;
+	private String MigrationTask, LogPath;
 	private int BATCH_SIZE = 0;
 	private DBConHandler SourceCon, TargetCon;
 	private TableHandler Table;
 	private ExodusProgress Prog;
+    private Logger TableLog;
 
 	public ExodusWorker(DBConHandler iSourceCon, DBConHandler iTargetCon, TableHandler iTable, String iMigrationTask) {
 		Table = iTable;
@@ -25,19 +26,23 @@ public class ExodusWorker {
         SourceCon = iSourceCon;
         TargetCon = iTargetCon; 
 
-        BATCH_SIZE = Integer.valueOf(Util.getPropertyValue("TransactionSize"));
+		LogPath = Util.getPropertyValue("LogPath");
+		TableLog = new Logger(LogPath + "/" + Table.getFullTableName() + ".log", true);
+		BATCH_SIZE = Integer.valueOf(Util.getPropertyValue("TransactionSize"));
 
 		//Identify if the Table has already been partially Migrated or not!
 		DeltaProcessing = ExodusProgress.hasTablePartiallyMigrated(Table.getSchemaName(), Table.getTableName());
+		TableAlreadyMigrated = ExodusProgress.hasTableMigrationCompleted(Table.getSchemaName(), Table.getTableName());
 	}
 	
 	//Data Migration Logic goes here... Takes care of Delta/Full migration
 	public long Exodus() throws SQLException {
-		String SourceSelectSQL, TargetInsertSQL, ColumnType, ErrorString;
+		String SourceSelectSQL, TargetInsertSQL, ColumnType, ErrorString, OutString;
 		ResultSetMetaData SourceResultSetMeta;
 	    PreparedStatement PreparedStmt;
 		long MigratedRows=0, TotalRecords=0, CommitCount=0, SecondsTaken, RecordsPerSecond=0;
 		float TimeforOneRecord;
+		boolean ExtraCommit=false;
 
 		//To Track Start/End and Estimate Time of Completion
 		LocalTime StartDT;
@@ -53,16 +58,23 @@ public class ExodusWorker {
 		
 		ResultSet SourceResultSetObj;
 		Statement SourceStatementObj;
-		
+		if (TableAlreadyMigrated) {
+			TableLog.WriteLog("Table Alread Migrated - " + Table.getTableName() + " Total Records to Migrate " + Util.numberFormat.format(TotalRecords));
+			Prog.ProgressEnd();
+			return 0;
+		}
 		if (DeltaProcessing) {
 			SourceSelectSQL = Table.getDeltaSelectScript();
 			TotalRecords = Table.getDeltaRecordCount();
+			TableLog.WriteLog("Delta Processing Started for - " + Table.getTableName() + " Previously Migrated " + Table.getDeltaRecordCount() + "/" + TotalRecords);
 		} else {
 			SourceSelectSQL = Table.getTableSelectScript();
 			TotalRecords = Table.getRecordCount();
+			TableLog.WriteLog("Processing Started for - " + Table.getTableName() + " Total Records to Migrate " + Util.numberFormat.format(TotalRecords));
 
 			//Try to create the target table and skip this entire process if any errors
 			if (Util.ExecuteScript(TargetCon, Table.getTableScript()) < 0) {
+				TableLog.WriteLog("Failed to create target table, Process aborted!");
 				return -1;
 			}
 		}
@@ -73,8 +85,10 @@ public class ExodusWorker {
 	    	    
 	    //See if first records will be able to fit a single BATCH 
 	    if (BATCH_SIZE > TotalRecords) {
-	    	BATCH_SIZE = (int)TotalRecords;
-	    }
+			BATCH_SIZE = (int)TotalRecords;
+	    } else {
+			ExtraCommit=true;
+		}
 
 		TargetInsertSQL = Table.getTargetInsertScript();
 		
@@ -186,6 +200,7 @@ public class ExodusWorker {
 			                    break;
 			                default: 
 			                	ErrorString += "\nUnknown Data Type: " + Table.getFullTableName() + "(" + SourceResultSetMeta.getColumnName(Col) + "(" + SourceResultSetMeta.getColumnTypeName(Col) + "))";
+								TableLog.WriteLog(ErrorString);
 					        	throw new SQLException(ErrorString);
 			            }
 			        }
@@ -204,231 +219,8 @@ public class ExodusWorker {
 						
 						TargetCon.getDBConnection().commit();
 
-						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
-						if (BatchCounter % 10 == 0) {
-							//Seconds Taken from Start to Now!
-							SecondsTaken = ChronoUnit.SECONDS.between(StartDT, LocalTime.now());
-							if (SecondsTaken == 0) {
-								SecondsTaken = 1;
-							}
-
-							//Time Taken for 1 Record
-							TimeforOneRecord = (float)(SecondsTaken/(float)CommitCount);
-							RecordsPerSecond = (long)(((float)CommitCount / (float)SecondsTaken));
-
-							EndDT = LocalTime.now().plusSeconds((long)((TotalRecords-CommitCount) * (TimeforOneRecord)));
-						}
-
-						System.out.print("\r" + LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + TotalRecords + "/" + CommitCount + "] @ " + RecordsPerSecond + " Rec/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]");
-			        }
-			        
-				} catch (SQLException e) {
-		        	TargetCon.getDBConnection().rollback();
-					ErrorString="";
-					e.printStackTrace();
-				}
-			}
-	        
-	        //Perform the final Commit!
-	        if (OverFlow > 0) {
-		        PreparedStmt.executeBatch();
-	        	CommitCount += OverFlow;
-	        	TargetCon.getDBConnection().commit();
-				System.out.print("\r" + LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + TotalRecords + "/" + CommitCount + "] @ " + RecordsPerSecond + " Rec/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]");
-	        }
-	        
-			//Close Statements and ResultSet
-	        SourceResultSetObj.close();
-        	SourceStatementObj.close();
-        	PreparedStmt.close();        	
-		} catch (SQLException e) {
-        	TargetCon.getDBConnection().rollback();
-			e.printStackTrace();
-			
-		} finally {	//Cleanup	        
-	        TargetCon.DisconnectDB();
-	        SourceCon.DisconnectDB();
-		}
-		
-		System.out.println();
-		return MigratedRows;
-	}
-
-	//BulkData Migration Logic goes here... Takes care of Delta/Full migration
-	public long BulkExodus() throws SQLException {
-		String SourceSelectSQL, TargetInsertSQL, ColumnType, ErrorString;
-		ResultSetMetaData SourceResultSetMeta;
-	    PreparedStatement PreparedStmt;
-		long MigratedRows=0, TotalRecords=0, CommitCount=0, SecondsTaken, RecordsPerSecond=0;
-		float TimeforOneRecord;
-
-		//To Track Start/End and Estimate Time of Completion
-		LocalTime StartDT;
-		LocalTime EndDT;
-	
-	    int ColumnCount, BatchRowCounter, IntValue, OverFlow, PackedBatchSize, BatchCounter=0, BulkColumnInd=0;
-		
-		byte[] BlobObj;
-		double DoubleValue;
-		BigDecimal BigDecimalValue;
-		long LongValue;
-		float FloatValue;
-		
-		ResultSet SourceResultSetObj;
-		Statement SourceStatementObj;
-		
-		if (DeltaProcessing) {
-			SourceSelectSQL = Table.getDeltaSelectScript();
-			TotalRecords = Table.getDeltaRecordCount();
-		} else {
-			SourceSelectSQL = Table.getTableSelectScript();
-			TotalRecords = Table.getRecordCount();
-
-			//Try to create the target table and skip this entire process if any errors
-			if (Util.ExecuteScript(TargetCon, Table.getTableScript()) < 0) {
-				return -1;
-			}
-		}
-		
-	    //Calculate How many extra records after perfect batches of BATCH_SIZE
-	    //This will be used later to fill in the last prepare statement string building
-	    OverFlow = (int)(TotalRecords % BATCH_SIZE);
-	    
-	    //Calculate what is the record count that will fit the batch perfectly, this is used to calculate the overflow to be handled in the last batch!
-	    PackedBatchSize = BATCH_SIZE * (int)(TotalRecords / BATCH_SIZE); 
-	    
-	    //See if first records will be able to fit a single BATCH 
-	    if (BATCH_SIZE > TotalRecords) {
-	    	BATCH_SIZE = (int)TotalRecords;
-	    }
-
-		TargetInsertSQL = Table.getTargetInsertScript();
-		
-		try {
-			SourceStatementObj = SourceCon.getDBConnection().createStatement();
-			SourceResultSetObj = SourceStatementObj.executeQuery(SourceSelectSQL);
-			
-			//Get the Meta data of the Source ResultSet, this will be used to get the list of columns in the ResultSet.
-			SourceResultSetMeta = SourceResultSetObj.getMetaData();
-	        ColumnCount = SourceResultSetMeta.getColumnCount();
-	        PreparedStmt = TargetCon.getDBConnection().prepareStatement(TargetInsertSQL);
-	        //Parse through the source query result-set!
-	        
-	        ErrorString="";
-	        BatchRowCounter=0;
-	        System.out.println("");
-			PreparedStmt.clearBatch();
-
-			StartDT = LocalTime.now();
-			EndDT = LocalTime.now();
-			RecordsPerSecond = BATCH_SIZE;
-
-	        while (SourceResultSetObj.next()) {
-				try {
-			        for (int Col = 1; Col <= ColumnCount; Col++) {
-						BulkColumnInd++;
-			            ColumnType = SourceResultSetMeta.getColumnTypeName(BulkColumnInd);
-
-			            switch (ColumnType) {
-		                	case "INTEGER":
-			                	IntValue = SourceResultSetObj.getInt(BulkColumnInd);
-			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.INTEGER);
-			                    else
-			                    	PreparedStmt.setInt(BulkColumnInd, IntValue);
-			                    break;
-			                case "VARCHAR": PreparedStmt.setString(BulkColumnInd, SourceResultSetObj.getString(BulkColumnInd));
-		                    	break;
-			                case "CHAR": PreparedStmt.setString(BulkColumnInd, SourceResultSetObj.getString(BulkColumnInd));
-			                    break;
-			                case "TIMESTAMP": PreparedStmt.setTimestamp(BulkColumnInd, SourceResultSetObj.getTimestamp(BulkColumnInd)); 
-		                    	break;
-			                case "DATE": PreparedStmt.setDate(BulkColumnInd, SourceResultSetObj.getDate(BulkColumnInd));
-			                    break;
-			                case "TIME": PreparedStmt.setTime(BulkColumnInd, SourceResultSetObj.getTime(BulkColumnInd));
-			                    break;
-			                case "BOOL": 
-			                case "BOOLEAN": 
-			                case "TINYINT": 
-			                case "TINYINT UNSIGNED": 
-			                    IntValue = SourceResultSetObj.getInt(BulkColumnInd);
-			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.TINYINT);
-			                    else
-			                    	PreparedStmt.setInt(BulkColumnInd, IntValue);
-			                    break;
-			                case "SMALLINT": 
-			                case "SMALLINT UNSIGNED": 
-			                    IntValue = SourceResultSetObj.getInt(BulkColumnInd);
-			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.SMALLINT);
-			                    else
-			                    	PreparedStmt.setInt(BulkColumnInd, IntValue);
-			                    break;
-			                case "BIGINT": 
-			                case "BIGINT UNSIGNED": 
-			                    LongValue = SourceResultSetObj.getLong(BulkColumnInd);
-			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.BIGINT);
-			                    else
-			                    	PreparedStmt.setLong(BulkColumnInd, LongValue);
-			                    break;                                
-			                case "DOUBLE":
-			                	DoubleValue = SourceResultSetObj.getDouble(BulkColumnInd);
-			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.DOUBLE);
-			                    else
-			                    	PreparedStmt.setDouble(BulkColumnInd, DoubleValue);
-			                    break;
-			                case "DECIMAL": 
-			                    BigDecimalValue = SourceResultSetObj.getBigDecimal(BulkColumnInd);
-			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.DECIMAL);
-			                    else
-			                    	PreparedStmt.setBigDecimal(BulkColumnInd, BigDecimalValue);
-			                    break;
-			                case "REAL":
-			                case "FLOAT":
-			                    FloatValue = SourceResultSetObj.getFloat(BulkColumnInd);
-			                    if(SourceResultSetObj.wasNull())
-			                    	PreparedStmt.setNull(BulkColumnInd, java.sql.Types.REAL);
-			                    else
-			                    	PreparedStmt.setFloat(BulkColumnInd, FloatValue);
-			                    break;
-			                case "TINYBLOB":
-			                case "BLOB":
-			                case "MEDIUMBLOB":
-			                case "LONGBLOB":
-			                	BlobObj = SourceResultSetObj.getBytes(BulkColumnInd);
-			                	if (BlobObj != null) 
-			                		PreparedStmt.setBytes(BulkColumnInd, BlobObj);
-			                	else   
-			                		PreparedStmt.setNull(BulkColumnInd, java.sql.Types.BLOB);
-			                    break;
-			                case "CLOB": 
-			                	PreparedStmt.setString(BulkColumnInd, SourceResultSetObj.getString(BulkColumnInd));
-			                    break;
-			                case "SQLXML": PreparedStmt.setClob(BulkColumnInd, SourceResultSetObj.getClob(BulkColumnInd));
-			                    break;
-			                default: 
-			                	ErrorString += "\nUnknown Data Type: " + Table.getFullTableName() + "(" + SourceResultSetMeta.getColumnName(Col) + "(" + SourceResultSetMeta.getColumnTypeName(Col) + "))";
-					        	throw new SQLException(ErrorString);
-			            }
-			        }
-			        
-			        PreparedStmt.addBatch();
-			        BatchRowCounter++;
-			        
-			        //Batch has reached its COMMIT point!
-			        if (BatchRowCounter % BATCH_SIZE == 0) {
-			        	BatchRowCounter = 0;
-			        	PreparedStmt.executeBatch();
-						
-						//Total Records Migrated
-						CommitCount += BATCH_SIZE;
-						BatchCounter++;
-						
-						TargetCon.getDBConnection().commit();
+						//Log Progress for the Table
+    	                Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
 
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
 						if (BatchCounter % 10 == 0) {
@@ -444,24 +236,32 @@ public class ExodusWorker {
 
 							EndDT = LocalTime.now().plusSeconds((long)((TotalRecords-CommitCount) * (TimeforOneRecord)));
 						}
-
-						System.out.print("\r" + LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + TotalRecords + "/" + CommitCount + "] @ " + RecordsPerSecond + " Rec/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]");
+						OutString = LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
+						System.out.print("\r" + OutString);
+						TableLog.WriteLog(OutString);
 			        }
 			        
 				} catch (SQLException e) {
-		        	TargetCon.getDBConnection().rollback();
+					TargetCon.getDBConnection().rollback();
+					new Logger(LogPath + "/" + Table.getFullTableName() + ".err", true, e.getMessage());
 					ErrorString="";
 					e.printStackTrace();
 				}
 			}
-	        
-	        //Perform the final Commit!
-	        if (OverFlow > 0) {
-		        PreparedStmt.executeBatch();
-	        	CommitCount += OverFlow;
-	        	TargetCon.getDBConnection().commit();
-				System.out.print("\r" + LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + TotalRecords + "/" + CommitCount + "] @ " + RecordsPerSecond + " Rec/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]");
-	        }
+			
+			//Only if the batch requires an extra commit
+			if (ExtraCommit) {
+				//Perform the final Commit!
+				PreparedStmt.executeBatch();
+				CommitCount += OverFlow;
+				TargetCon.getDBConnection().commit();
+				//Log Final Progress for the Table
+				Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
+			}
+
+			OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
+			System.out.print("\r" + OutString);
+			TableLog.WriteLog(OutString);
 	        
 			//Close Statements and ResultSet
 	        SourceResultSetObj.close();
@@ -469,14 +269,18 @@ public class ExodusWorker {
         	PreparedStmt.close();        	
 		} catch (SQLException e) {
         	TargetCon.getDBConnection().rollback();
+			new Logger(LogPath + "/" + Table.getFullTableName() + ".err", true, e.getMessage());
 			e.printStackTrace();
 			
 		} finally {	//Cleanup	        
 	        TargetCon.DisconnectDB();
-	        SourceCon.DisconnectDB();
+			SourceCon.DisconnectDB();
+			Prog.ProgressEnd();
 		}
 		
 		System.out.println();
+		TableLog.WriteLog("- EOF -");
+		TableLog.CloseLogFile();
 		return MigratedRows;
 	}
 }

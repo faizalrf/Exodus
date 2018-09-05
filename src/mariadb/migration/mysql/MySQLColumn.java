@@ -90,8 +90,11 @@ public class MySQLColumn implements ColumnHandler {
     	if (!ColumnDataType.isEmpty()) {
     		ColumnScript += " " + ColumnDataType + " " + Nulls;
     		if (!DefaultValue.isEmpty()) {
-	    		if ((DataType.startsWith("date") || DataType.startsWith("time") || DefaultValue.startsWith("(")) && (!DataType.contains("char") && !DataType.contains("text"))) {
-	    			ColumnScript += " default " + DefaultValue;
+	    		if ((DataType.startsWith("date") || DataType.startsWith("time") || DefaultValue.startsWith("(") || DataType.startsWith("bit")) && (!DataType.contains("char") && !DataType.contains("text"))) {
+                    //This is for DATE and TIMESTAMP DEFAULTS SET AS 0000-00-00
+                    if (!DefaultValue.startsWith("0000")) {
+                        ColumnScript += " default " + DefaultValue;
+                    }
 	    		} else {
 	    			ColumnScript += " default '" + DefaultValue + "'";	    			
 	    		}

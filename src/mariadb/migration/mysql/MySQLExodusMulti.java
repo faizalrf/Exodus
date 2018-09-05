@@ -3,6 +3,7 @@ package mariadb.migration.mysql;
 import mariadb.migration.DBConHandler;
 import mariadb.migration.MariaDBConnect;
 import mariadb.migration.ExodusWorker;
+import mariadb.migration.Logger;
 import mariadb.migration.TableHandler;
 import mariadb.migration.Util;
 
@@ -14,7 +15,7 @@ public class MySQLExodusMulti implements Runnable {
 	long RowsMigrated=0;
 	String MigrationTask;
 
-	public MySQLExodusMulti(TableHandler iTable, String iTask) {
+	public MySQLExodusMulti(TableHandler iTable) {
 		String SchemaName, TableName;
 		Table = iTable;
 		
@@ -27,7 +28,7 @@ public class MySQLExodusMulti implements Runnable {
 		
 		//Dry Run or normal Migration
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
-			MigrationTask = iTask;
+			MigrationTask = "MIGRATE";
 		} else {
 			MigrationTask = "SKIP";
 		}
@@ -39,7 +40,8 @@ public class MySQLExodusMulti implements Runnable {
     		RowsMigrated = MySQLExodusWorker.Exodus();
     	}
     	catch (Exception e) {
-    		System.out.println("Exception While running Main Thread!");
+			System.out.println("Exception While running Main Thread!");
+			new Logger(".//logs//Exodus.err", true, "Exception While running Main Thread - " + e.getMessage());
 			e.printStackTrace();
     	}
     }
@@ -50,5 +52,9 @@ public class MySQLExodusMulti implements Runnable {
     		MySQLWorkerThread = new Thread (this, ThreadName);
     	}
     	MySQLWorkerThread.start();
-    }
+	}
+
+    public boolean isThreadActive() { 
+		return MySQLWorkerThread.isAlive(); 
+	}	
 }

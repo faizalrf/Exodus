@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import mariadb.migration.DBConHandler;
 import mariadb.migration.MariaDBConnect;
 import mariadb.migration.ExodusWorker;
+import mariadb.migration.Logger;
 import mariadb.migration.TableHandler;
 import mariadb.migration.Util;
 
@@ -15,7 +16,7 @@ public class MySQLExodusSingle {
 	//Start Progress for the Current Table #Table#
 	String MigrationTask;
 
-	public MySQLExodusSingle(TableHandler iTable, String iTask) {
+	public MySQLExodusSingle(TableHandler iTable) {
 		Table = iTable;
 	
 		SourceCon = new MySQLConnect(Util.getPropertyValue("SourceDB"));
@@ -23,7 +24,7 @@ public class MySQLExodusSingle {
 
 		//Dry Run or normal Migration
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
-			MigrationTask = iTask;
+			MigrationTask = "MIGRATE";
 		} else {
 			MigrationTask = "SKIP";
 		}		
@@ -34,6 +35,7 @@ public class MySQLExodusSingle {
 		try {
 			RowsMigrated = MySQLExodusWorker.Exodus();
 		} catch (SQLException e) {
+			new Logger(".//logs//Exodus.err", true, e.getMessage());
 			e.printStackTrace();
 		}
 	}

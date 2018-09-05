@@ -27,14 +27,8 @@ public class ExodusProgress {
 		TotalRecords = iTable.getRecordCount();
 		TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 		SerialNo = getSerialNo(SchemaName, TableName);
-		
-        try {
-			Util.getPropertyValue("DryRun");
-		} catch (NumberFormatException e1) {
-			System.out.println("Reading Properties: " + e1.getMessage());
-		}
         
-        if (CreateTables.equals("NO")) {
+        if (Util.getPropertyValue("DryRun").equals("NO")) {
 			try {
 				StatementObj = TargetCon.getDBConnection().createStatement();
 	
@@ -63,27 +57,29 @@ public class ExodusProgress {
 		Statement StatementObj;
 		DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
-		try {
-			StatementObj = TargetCon.getDBConnection().createStatement();
-			sqlStatement = "CREATE TABLE IF NOT EXISTS " + SchemaName + ".MigrationLog(SchemaName VARCHAR(100), TableName VARCHAR(100) NOT NULL, SerialNo INT NOT NULL DEFAULT '1', " + 
-							"StartTime TIMESTAMP NOT NULL DEFAULT Current_Timestamp(), EndTime TIMESTAMP NULL DEFAULT NULL, " + 
-							"TotalRecords BIGINT(20) UNSIGNED NULL DEFAULT '0', DeltaRecords BIGINT UNSIGNED NULL DEFAULT '0', " +
-							"RecordsLoaded BIGINT UNSIGNED NULL DEFAULT '0', RecordsUpdated BIGINT UNSIGNED NULL DEFAULT '0', " + 
-							"LastKeyUpdated INT NOT NULL DEFAULT -1, UpdateTime TIMESTAMP NULL DEFAULT NULL ON UPDATE Current_Timestamp(), " + 
-							"CreateDate TIMESTAMP NULL DEFAULT Current_Timestamp(), PRIMARY KEY (TableName, SerialNo))";
-	
-			StatementObj.executeUpdate(sqlStatement);
-	
-			sqlStatement = "CREATE TABLE IF NOT EXISTS " + SchemaName + ".MigrationLogDETAIL(ID Serial, SchemaName VARCHAR(100), TableName VARCHAR(100), StartTime TIMESTAMP DEFAULT Current_Timestamp(), " +
-							"EndTime TIMESTAMP NULL, SQLCommand VARCHAR(10000), DBMessage VARCHAR(10000))";
-	
-			StatementObj.executeUpdate(sqlStatement);
-			
-			StatementObj.close();
-			TargetCon.DisconnectDB();
-		} catch (SQLException e) {
-			System.out.println("*** Failed to create Migration Log Tables ***");
-			e.printStackTrace();
+		if (Util.getPropertyValue("DryRun").equals("NO")) {
+			try {
+				StatementObj = TargetCon.getDBConnection().createStatement();
+				sqlStatement = "CREATE TABLE IF NOT EXISTS " + SchemaName + ".MigrationLog(SchemaName VARCHAR(100), TableName VARCHAR(100) NOT NULL, SerialNo INT NOT NULL DEFAULT '1', " + 
+								"StartTime TIMESTAMP NOT NULL DEFAULT Current_Timestamp(), EndTime TIMESTAMP NULL DEFAULT NULL, " + 
+								"TotalRecords BIGINT(20) UNSIGNED NULL DEFAULT '0', DeltaRecords BIGINT UNSIGNED NULL DEFAULT '0', " +
+								"RecordsLoaded BIGINT UNSIGNED NULL DEFAULT '0', RecordsUpdated BIGINT UNSIGNED NULL DEFAULT '0', " + 
+								"LastKeyUpdated INT NOT NULL DEFAULT -1, UpdateTime TIMESTAMP NULL DEFAULT NULL ON UPDATE Current_Timestamp(), " + 
+								"CreateDate TIMESTAMP NULL DEFAULT Current_Timestamp(), PRIMARY KEY (TableName, SerialNo))";
+		
+				StatementObj.executeUpdate(sqlStatement);
+		
+				sqlStatement = "CREATE TABLE IF NOT EXISTS " + SchemaName + ".MigrationLogDETAIL(ID Serial, SchemaName VARCHAR(100), TableName VARCHAR(100), StartTime TIMESTAMP DEFAULT Current_Timestamp(), " +
+								"EndTime TIMESTAMP NULL, SQLCommand VARCHAR(10000), DBMessage VARCHAR(10000))";
+		
+				StatementObj.executeUpdate(sqlStatement);
+				
+				StatementObj.close();
+				TargetCon.DisconnectDB();
+			} catch (SQLException e) {
+				System.out.println("*** Failed to create Migration Log Tables ***");
+				e.printStackTrace();
+			}
 		}
 	}
 
