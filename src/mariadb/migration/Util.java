@@ -2,6 +2,7 @@ package mariadb.migration;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -34,8 +35,28 @@ public class Util {
 			StatementObj = TargetCon.getDBConnection().createStatement();
 	
 			StatementObj.executeUpdate(SQLScript);
-			ReturnStatus = StatementObj.getUpdateCount();
 			
+			StatementObj.close();
+		} catch (SQLException e) {
+			System.out.println("*** Failed to Execute: " + SQLScript);
+			e.printStackTrace();
+			ReturnStatus = -1;
+		}
+    	return ReturnStatus;
+    }
+
+	public static long ExecuteScript(DBConHandler TargetCon, List<String> SQLScript) {
+    	long ReturnStatus = 0;
+		Statement StatementObj;
+
+		try {
+			StatementObj = TargetCon.getDBConnection().createStatement();
+
+			for (String SQL : SQLScript) {
+				StatementObj.addBatch(SQL);
+			}
+			
+			StatementObj.executeBatch();
 			StatementObj.close();
 		} catch (SQLException e) {
 			System.out.println("*** Failed to Execute: " + SQLScript);

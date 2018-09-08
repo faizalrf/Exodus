@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExodusWorker {
 	private boolean DeltaProcessing=false, TableAlreadyMigrated=false;
@@ -33,6 +35,10 @@ public class ExodusWorker {
 		//Identify if the Table has already been partially Migrated or not!
 		DeltaProcessing = ExodusProgress.hasTablePartiallyMigrated(Table.getSchemaName(), Table.getTableName());
 		TableAlreadyMigrated = ExodusProgress.hasTableMigrationCompleted(Table.getSchemaName(), Table.getTableName());
+
+		//Execute Additional Pre-Load Scripts
+		Util.ExecuteScript(TargetCon, GetPreMigrationStatements("MySQL"));
+
 	}
 	
 	//Data Migration Logic goes here... Takes care of Delta/Full migration
@@ -56,6 +62,12 @@ public class ExodusWorker {
 		long LongValue;
 		float FloatValue;
 		
+		if (MigrationTask.equals("SKIP")) {
+			System.out.println("\nDry Run, Table " + Table.getFullTableName() + " Skipped");
+			TableLog.WriteLog("Dry Run, Table " + Table.getFullTableName() + " Skipped");
+			return 0;
+		}
+
 		ResultSet SourceResultSetObj;
 		Statement SourceStatementObj;
 		if (TableAlreadyMigrated) {
@@ -63,6 +75,13 @@ public class ExodusWorker {
 			Prog.ProgressEnd();
 			return 0;
 		}
+		
+		//Create the Remote Table for Delta Processing
+		for (String DeltaTabScript : Table.getDeltaTableScript()) {
+			Util.ExecuteScript(SourceCon, DeltaTabScript);
+		}
+
+		//Check for Delta conditions and actions
 		if (DeltaProcessing) {
 			SourceSelectSQL = Table.getDeltaSelectScript();
 			TotalRecords = Table.getDeltaRecordCount();
@@ -77,8 +96,7 @@ public class ExodusWorker {
 				TableLog.WriteLog("Failed to create target table, Process aborted!");
 				return -1;
 			}
-			new Logger(Util.getPropertyValue("DDLPath") + "/" + Table.getFullTableName() + ".sql", false, Table.getTableScript());
-
+			new Logger(Util.getPropertyValue("DDLPath") + "/" + Table.getFullTableName() + ".sql", Table.getTableScript() + ";", false, false);
 		}
 		
 	    //Calculate How many extra records after perfect batches of BATCH_SIZE
@@ -244,7 +262,7 @@ public class ExodusWorker {
 			        
 				} catch (SQLException e) {
 					TargetCon.getDBConnection().rollback();
-					new Logger(LogPath + "/" + Table.getFullTableName() + ".err", true, e.getMessage());
+					new Logger(LogPath + "/" + Table.getFullTableName() + ".err", e.getMessage(), true);
 					ErrorString="";
 					e.printStackTrace();
 				}
@@ -270,7 +288,7 @@ public class ExodusWorker {
         	PreparedStmt.close();        	
 		} catch (SQLException e) {
         	TargetCon.getDBConnection().rollback();
-			new Logger(LogPath + "/" + Table.getFullTableName() + ".err", true, e.getMessage());
+			new Logger(LogPath + "/" + Table.getFullTableName() + ".err", e.getMessage(), true);
 			e.printStackTrace();
 			
 		} finally {	//Cleanup	        
@@ -283,5 +301,18 @@ public class ExodusWorker {
 		TableLog.WriteLog("- EOF -");
 		TableLog.CloseLogFile();
 		return MigratedRows;
+	}
+
+	private List<String> GetPreMigrationStatements(String TargetDB) {
+		List<String> Scripts = new ArrayList<String>();
+		String Statement;
+		int Counter=0;
+
+		Statement = Util.getPropertyValue(TargetDB + ".PreLoadStatements." + (++Counter));
+		while(!Statement.isEmpty()) {
+			Scripts.add(Statement);
+			Statement = Util.getPropertyValue(TargetDB + ".PreLoadStatements." + (++Counter));
+		}
+		return Scripts;
 	}
 }

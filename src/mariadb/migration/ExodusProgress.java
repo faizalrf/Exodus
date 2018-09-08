@@ -21,7 +21,7 @@ public class ExodusProgress {
 	
 	//Constructor with Source Table as a parameter
 	public ExodusProgress(TableHandler iTable) {
-		String sqlStatement, CreateTables="";
+		String sqlStatement;
 		TableName = iTable.getTableName();
 		SchemaName = iTable.getSchemaName();
 		TotalRecords = iTable.getRecordCount();
@@ -183,21 +183,24 @@ public class ExodusProgress {
 		boolean hasMigrationCompleted=false;
 		ResultSet ResultSetObj;
 		Statement StatementObj;
-		DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
-		
-		String sqlStatement = "SELECT Count(*) as MigrationCount, (CASE WHEN TotalRecords = 0 THEN -1 ELSE Sum(TotalRecords) - Sum(RecordsLoaded) END) AS Migrated FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
-		try {
-			StatementObj = TargetCon.getDBConnection().createStatement();
-			ResultSetObj = StatementObj.executeQuery(sqlStatement);
-			
-			//Being a COUNT(*) query, it will always have 1 record in the result-set!
-			ResultSetObj.next();
-			hasMigrationCompleted = (ResultSetObj.getInt("MigrationCount") > 0 && ResultSetObj.getInt("Migrated") == 0);
-			
-			StatementObj.close();
-			
-		} catch (SQLException e) {
-			e.printStackTrace();
+
+		if (Util.getPropertyValue("DryRun").equals("NO")) {
+			DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+
+			String sqlStatement = "SELECT Count(*) as MigrationCount, (CASE WHEN TotalRecords = 0 THEN -1 ELSE Sum(TotalRecords) - Sum(RecordsLoaded) END) AS Migrated FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
+			try {
+				StatementObj = TargetCon.getDBConnection().createStatement();
+				ResultSetObj = StatementObj.executeQuery(sqlStatement);
+				
+				//Being a COUNT(*) query, it will always have 1 record in the result-set!
+				ResultSetObj.next();
+				hasMigrationCompleted = (ResultSetObj.getInt("MigrationCount") > 0 && ResultSetObj.getInt("Migrated") == 0);
+				
+				StatementObj.close();
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 		return hasMigrationCompleted;
 	}
@@ -206,21 +209,23 @@ public class ExodusProgress {
 		boolean hasTableMigrated=false;
 		ResultSet ResultSetObj;
 		Statement StatementObj;
-		DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+		if (Util.getPropertyValue("DryRun").equals("NO")) {
+			DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 		
-		String sqlStatement = "SELECT Count(*) MigrationCount, SUM(TotalRecords) - Sum(RecordsLoaded) AS hasMigrated, MAX(RecordsLoaded) LoadedRecords FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
-		try {
-			StatementObj = TargetCon.getDBConnection().createStatement();
-			ResultSetObj = StatementObj.executeQuery(sqlStatement);
-			
-			//Being a COUNT(*) query, it will always have 1 record in the result-set!
-			ResultSetObj.next();
-			hasTableMigrated = (ResultSetObj.getInt("MigrationCount") > 0 && ResultSetObj.getInt("hasMigrated") > 0);
-			
-			StatementObj.close();
-			
-		} catch (SQLException e) {
-			e.printStackTrace();
+			String sqlStatement = "SELECT Count(*) MigrationCount, SUM(TotalRecords) - Sum(RecordsLoaded) AS hasMigrated, MAX(RecordsLoaded) LoadedRecords FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
+			try {
+				StatementObj = TargetCon.getDBConnection().createStatement();
+				ResultSetObj = StatementObj.executeQuery(sqlStatement);
+				
+				//Being a COUNT(*) query, it will always have 1 record in the result-set!
+				ResultSetObj.next();
+				hasTableMigrated = (ResultSetObj.getInt("MigrationCount") > 0 && ResultSetObj.getInt("hasMigrated") > 0);
+				
+				StatementObj.close();
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 		return hasTableMigrated;
 	}
@@ -229,22 +234,24 @@ public class ExodusProgress {
 	public static int getSerialNo(String SchemaName, String TableName) {
 		ResultSet ResultSetObj;
 		Statement StatementObj;
-		DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 		int iSerialNo=0;
-		
-		String sqlStatement = "SELECT COUNT(*) AS SerialNo FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
-		try {
-			StatementObj = TargetCon.getDBConnection().createStatement();
-			ResultSetObj = StatementObj.executeQuery(sqlStatement);
+		if (Util.getPropertyValue("DryRun").equals("NO")) {
+			DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 			
-			//Being a COUNT(*) query, it will always have 1 record in the result-set!
-			ResultSetObj.next();
-			iSerialNo = ResultSetObj.getInt("SerialNo")+1;
-			
-			StatementObj.close();
-			
-		} catch (SQLException e) {
-			e.printStackTrace();
+			String sqlStatement = "SELECT COUNT(*) AS SerialNo FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
+			try {
+				StatementObj = TargetCon.getDBConnection().createStatement();
+				ResultSetObj = StatementObj.executeQuery(sqlStatement);
+				
+				//Being a COUNT(*) query, it will always have 1 record in the result-set!
+				ResultSetObj.next();
+				iSerialNo = ResultSetObj.getInt("SerialNo")+1;
+				
+				StatementObj.close();
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 		return iSerialNo;
 	}	

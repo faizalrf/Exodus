@@ -14,12 +14,21 @@ public class Logger implements LogWriter {
 	private boolean Append = false;
     SimpleDateFormat DateFormat = new SimpleDateFormat ("E yyyy.MM.dd 'at' hh:mm:ss a zzz");
 	
-	public Logger(String oFileName, boolean iAppendMode, String LogText) {
+	public Logger(String oFileName, String LogText, boolean iAppendMode) {
 		FileName = oFileName;
 		Append = iAppendMode;
 		FilePath = Paths.get(FileName.trim()).toString();
 		CreateLogFile();
 		WriteLog(LogText);
+		CloseLogFile();
+	}
+
+	public Logger(String oFileName, String LogText, boolean iAppendMode, boolean iWriteTimeStamp) {
+		FileName = oFileName;
+		Append = iAppendMode;
+		FilePath = Paths.get(FileName.trim()).toString();
+		CreateLogFile();
+		WriteLog(LogText, iWriteTimeStamp);
 		CloseLogFile();
 	}
 

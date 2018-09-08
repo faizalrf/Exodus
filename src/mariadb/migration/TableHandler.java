@@ -31,6 +31,7 @@ public interface TableHandler {
     String getRawColumnList();
     List<String> getPrimaryKeyList();
     String getTableScript();
+    List<String> getDeltaTableScript();
     List<String> getTableConstraints();
     List<String> getCheckConstraints();
     List<String> getTriggers();

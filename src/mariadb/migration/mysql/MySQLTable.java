@@ -13,8 +13,9 @@ import mariadb.migration.ColumnCollectionHandler;
 import mariadb.migration.Util;
 
 public class MySQLTable implements TableHandler {
-	private String SchemaName, TableName, TableScript, DeltaSelectScript, FullTableName, FullDeltaTableName, DeltaTableScript, SelectColumnList, 
-					RawColumnList, InsertBindList, PrimaryKey, PrimaryKeyBind, TableSelectScript, TargetInsertScript, MyPrimaryKeyScript, AdditionalCriteria;
+	private String SchemaName, TableName, TableScript, DeltaSelectScript, FullTableName, FullDeltaTableName, SelectColumnList, 
+					RawColumnList, InsertBindList, PrimaryKey, PrimaryKeyBind, TableSelectScript, TargetInsertScript, MyPrimaryKeyScript, AdditionalCriteria,
+					DeltaDBName;
 	private ColumnCollectionHandler MyCol;
 
 	private List<String> MyPKCols = new ArrayList<String>();
@@ -23,6 +24,7 @@ public class MySQLTable implements TableHandler {
 	private List<String> MyTriggers = new ArrayList<String>();
 	private List<String> MyConstraints = new ArrayList<String>();
 	private List<String> MyCheckConstraints = new ArrayList<String>();
+	private List<String> MyDeltaScripts = new ArrayList<String>();
 
 	private Connection oCon;
 	private long RowCount, DeltaRowCount;
@@ -33,7 +35,8 @@ public class MySQLTable implements TableHandler {
 		SchemaName = iSchemaName;
 		TableName = iTableName;
 		FullTableName = SchemaName + "." + TableName;
-		FullDeltaTableName = SchemaName + "." + "exo_" + TableName.toLowerCase();
+		DeltaDBName = "ExodusDb";
+		FullDeltaTableName = DeltaDBName + "." + TableName.toLowerCase();
 		AdditionalCriteria = Util.getPropertyValue(FullTableName + ".AdditionalCriteria");
 
 		setMigrationSkipped();
@@ -71,7 +74,7 @@ public class MySQLTable implements TableHandler {
 		try {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
-			while (oResultSet.next()) {
+			if (oResultSet.next()) {
 				isMigrationSkipped = (oResultSet.getLong("ROW_COUNT") == 0);
 			}
 
@@ -83,26 +86,38 @@ public class MySQLTable implements TableHandler {
 	}
 
 	public void setTableScript() {
-		String ScriptSQL, TableScriptPrefix, TableScriptSuffix;
+		String ScriptSQL;
+		//, TableScriptPrefix, TableScriptSuffix;
 		Statement oStatement;
 		ResultSet oResultSet;
 
+		/*
 		ScriptSQL = "SELECT ENGINE, ROW_FORMAT, "
 				+ "AUTO_INCREMENT, SUBSTR(TABLE_COLLATION, 1, INSTR(TABLE_COLLATION, '_')-1) TABLE_CHARSET, "
 				+ "TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES " + "WHERE TABLE_SCHEMA='" + SchemaName
 				+ "' AND TABLE_NAME = '" + TableName + "' AND TABLE_TYPE = 'BASE TABLE'";
-
+		*/
+		ScriptSQL = "SHOW CREATE TABLE " + FullTableName;
 		try {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
 
-			while (oResultSet.next()) {
-				TableScriptPrefix = "CREATE TABLE IF NOT EXISTS " + FullTableName + " (";
-				TableScriptSuffix = ") ENGINE=" + oResultSet.getString("ENGINE") + " CHARACTER SET="
-						+ oResultSet.getString("TABLE_CHARSET") + " COLLATE=" + oResultSet.getString("TABLE_COLLATION")
-						+ " ROW_FORMAT=" + oResultSet.getString("ROW_FORMAT");
-				TableScript = TableScriptPrefix + MyCol.getSQLScript() + TableScriptSuffix;
+			if (oResultSet.next()) {
+				//TableScriptPrefix = "CREATE TABLE IF NOT EXISTS " + FullTableName + " (";
+				//TableScriptSuffix = ") ENGINE=" + oResultSet.getString("ENGINE") + " CHARACTER SET="
+				//		+ oResultSet.getString("TABLE_CHARSET") + " COLLATE=" + oResultSet.getString("TABLE_COLLATION")
+				//		+ " ROW_FORMAT=" + oResultSet.getString("ROW_FORMAT");
+				//TableScript = TableScriptPrefix + MyCol.getSQLScript() + TableScriptSuffix;
+				TableScript = oResultSet.getString(2);
+
+				//Compatibility with MariaDB
+				TableScript = TableScript.replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS `" + SchemaName + "`.");
+				TableScript = TableScript.replace("GENERATED ALWAYS AS", "AS");
+				TableScript = TableScript.replace("VIRTUAL NULL", "VIRTUAL");
+				TableScript = TableScript.replace("STORED NOT NULL", "PERSISTENT");
+				//System.out.println(TableScript);
 			}
+			
 			oStatement.close();
 			oResultSet.close();
 		} catch (SQLException e) {
@@ -112,7 +127,7 @@ public class MySQLTable implements TableHandler {
 	
 	// Build up Table's Column List and Bind Variables List;
 	public void setColumnList() {
-		String DeltaPKColList = "", FirstKeyCol = "", ColumnExpression, ColumnName;
+		String DeltaPKColList = "", FirstKeyCol = "", ColumnExpression, ColumnName, DeltaColList="", DeltaTableScript="";
 		SelectColumnList = "";
 		RawColumnList = "";
 		InsertBindList = "";
@@ -123,13 +138,7 @@ public class MySQLTable implements TableHandler {
 		System.out.print("\nReading Table " + FullTableName + ".: ");
 		for (ColumnHandler Col : MyCol.getColumnList()) {
 			ColumnName = Col.getName();
-			//switch (Col.getDataType()) {
-			//case "json":
-			//	ColumnExpression = "CONVERT(A." + ColumnName + " USING UTF8) AS " + ColumnName;
-			//	break;
-			//default:
 			ColumnExpression = "A." + Col.getName();
-			//}
 
 			SelectColumnList += ColumnExpression + ",";
 			RawColumnList += ColumnName + ",";
@@ -138,7 +147,7 @@ public class MySQLTable implements TableHandler {
 			if (Col.getIsPrimaryKey()) {
 				PrimaryKey += ColumnExpression + ",";
 				PrimaryKeyBind += "?,";
-				DeltaTableScript += ColumnName + " " + Col.getColumnDataType() + ",";
+				DeltaColList += ColumnName + " " + Col.getColumnDataType() + ",";
 
 				// To use for IS NULL in the DELTA SELECT;
 				DeltaPKColList += "B." + ColumnName + " = " + ColumnExpression + " AND ";
@@ -167,12 +176,16 @@ public class MySQLTable implements TableHandler {
 
 			// Delta SELECT Script with OUTER JOIN and IS NULL
 			DeltaSelectScript = TableSelectScript + " LEFT OUTER JOIN " + FullDeltaTableName + " B ON " + DeltaPKColList
-					+ " WHERE " + FirstKeyCol + " IS NULL ORDER BY " + PrimaryKey + " " + AdditionalCriteria;
-			DeltaTableScript = "CREATE TABLE " + FullDeltaTableName + "("
-					+ DeltaTableScript.substring(0, DeltaTableScript.length() - 2) + ") engine=MyISAM";
+					+ " WHERE " + FirstKeyCol + " IS NULL AND " + AdditionalCriteria + " ORDER BY " + PrimaryKey;
+			DeltaTableScript = "CREATE TABLE IF NOT EXISTS " + FullDeltaTableName + "("
+					+ DeltaColList.substring(0, DeltaColList.length() - 1) + ") engine=MyISAM";
 
 			// Done this after already used in the previous statement
-			TableSelectScript += " ORDER BY " + PrimaryKey + " " + AdditionalCriteria;
+			TableSelectScript +=  " " + AdditionalCriteria + " ORDER BY " + PrimaryKey;
+
+			//This will be handled on the main calling class...
+			MyDeltaScripts.add("CREATE DATABASE IF NOT EXISTS " + DeltaDBName);
+			MyDeltaScripts.add(DeltaTableScript);
 		}
 	}
 
@@ -354,10 +367,6 @@ public class MySQLTable implements TableHandler {
 		}
 	}
 
-	public void setDeltaTableScript() {
-
-	}
-
 	public void setDeltaRecordCount() {
 		String ScriptSQL;
 		Statement oStatement;
@@ -393,6 +402,10 @@ public class MySQLTable implements TableHandler {
 
 	public String getCreateTableScript() {
 		return TableScript;
+	}
+
+	public List<String> getDeltaTableScript() {
+		return MyDeltaScripts;
 	}
 
 	public List<String> getTableIndexes() {

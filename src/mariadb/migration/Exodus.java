@@ -29,9 +29,16 @@ public class Exodus {
         try {
             for (SchemaHandler oSchema : MyDB.getSchemaList()) {
                 if (!DryRun) {
-                    //Create Migration Log Table in the Schema
+                    //Create Target Schema if not already there
+                    if (Util.ExecuteScript(TargetCon, oSchema.getSchemaScript()) < 0) {
+                        System.out.println("\nFailed to create database, Aborting!\n");
+                        return;
+                    }
+
+                    //Create Database first then create Migration Log Table in the Schema
                     ExodusProgress.CreateProgressLogTable(oSchema.getSchemaName());
                 }
+
                 for (TableHandler Tab : oSchema.getTables()) {
                     if (!Tab.getMigrationSkipped()) {
                         MySQLExodusSingle SingleTable = new MySQLExodusSingle(Tab);
@@ -42,7 +49,7 @@ public class Exodus {
             
         } catch (Exception e) {
             System.out.println("Error While Processing");
-            new Logger(LogPath + "/Exodus.err", true, "Error While Processing - " + e.getMessage());
+            new Logger(LogPath + "/Exodus.err", "Error While Processing - " + e.getMessage(), true);
             e.printStackTrace();
         } finally {
             SourceCon.DisconnectDB();
@@ -95,7 +102,7 @@ public class Exodus {
                     MigrationErrors = true;
                     System.out.println("Error while processing the main thread");
                     //Log the error to the log file
-                    new Logger(LogPath + "/Exodus.err", true, "Error while processing the main thread - " + e.getMessage());
+                    new Logger(LogPath + "/Exodus.err", "Error while processing the main thread - " + e.getMessage(), true);
                     e.printStackTrace();
                 }
             }
@@ -123,7 +130,7 @@ public class Exodus {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				System.out.println("Thread Cleanup Exception");
-                new Logger(LogPath + "/Exodus.err", true, "Thread Cleanup Exception - " + e.getMessage());
+                new Logger(LogPath + "/Exodus.err", "Thread Cleanup Exception - " + e.getMessage(), true);
 				e.printStackTrace();
 			}
         }

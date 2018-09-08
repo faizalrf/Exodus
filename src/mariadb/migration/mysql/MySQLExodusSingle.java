@@ -35,7 +35,7 @@ public class MySQLExodusSingle {
 		try {
 			RowsMigrated = MySQLExodusWorker.Exodus();
 		} catch (SQLException e) {
-			new Logger(".//logs//Exodus.err", true, e.getMessage());
+			new Logger(Util.getPropertyValue("LogPath") + "/Exodus.err", e.getMessage(), true);
 			e.printStackTrace();
 		} finally {
 			SourceCon.DisconnectDB();
