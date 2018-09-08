@@ -8,8 +8,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ExodusWorker {
 	private boolean DeltaProcessing=false, TableAlreadyMigrated=false;
@@ -37,7 +35,7 @@ public class ExodusWorker {
 		TableAlreadyMigrated = ExodusProgress.hasTableMigrationCompleted(Table.getSchemaName(), Table.getTableName());
 
 		//Execute Additional Pre-Load Scripts
-		Util.ExecuteScript(TargetCon, GetPreMigrationStatements("MySQL"));
+		Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PreLoadStatements"));
 
 	}
 	
@@ -75,7 +73,7 @@ public class ExodusWorker {
 			Prog.ProgressEnd();
 			return 0;
 		}
-		
+
 		//Create the Remote Table for Delta Processing
 		for (String DeltaTabScript : Table.getDeltaTableScript()) {
 			Util.ExecuteScript(SourceCon, DeltaTabScript);
@@ -301,18 +299,5 @@ public class ExodusWorker {
 		TableLog.WriteLog("- EOF -");
 		TableLog.CloseLogFile();
 		return MigratedRows;
-	}
-
-	private List<String> GetPreMigrationStatements(String TargetDB) {
-		List<String> Scripts = new ArrayList<String>();
-		String Statement;
-		int Counter=0;
-
-		Statement = Util.getPropertyValue(TargetDB + ".PreLoadStatements." + (++Counter));
-		while(!Statement.isEmpty()) {
-			Scripts.add(Statement);
-			Statement = Util.getPropertyValue(TargetDB + ".PreLoadStatements." + (++Counter));
-		}
-		return Scripts;
 	}
 }

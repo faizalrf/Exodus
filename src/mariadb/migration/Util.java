@@ -2,6 +2,7 @@ package mariadb.migration;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -45,6 +46,19 @@ public class Util {
     	return ReturnStatus;
     }
 
+	public static List<String> GetExtraStatements(String Key) {
+		List<String> Scripts = new ArrayList<String>();
+		String Statement;
+		int Counter=0;
+
+		Statement = Util.getPropertyValue(Key + "." + (++Counter));
+		while(!Statement.isEmpty()) {
+			Scripts.add(Statement);
+			Statement = Util.getPropertyValue(Key + "." + (++Counter));
+		}
+		return Scripts;
+	}
+
 	public static long ExecuteScript(DBConHandler TargetCon, List<String> SQLScript) {
     	long ReturnStatus = 0;
 		Statement StatementObj;
@@ -55,7 +69,7 @@ public class Util {
 			for (String SQL : SQLScript) {
 				StatementObj.addBatch(SQL);
 			}
-			
+
 			StatementObj.executeBatch();
 			StatementObj.close();
 		} catch (SQLException e) {

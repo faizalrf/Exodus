@@ -12,18 +12,18 @@ public class Exodus {
         DryRun = Util.getPropertyValue("DryRun").equals("YES");
         LogPath = Util.getPropertyValue("LogPath");
         MigrationErrors = false;
+        MySQLConnect SourceCon = new MySQLConnect(Util.getPropertyValue("SourceDB"));
+        MariaDBConnect TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
         if (Integer.valueOf(Util.getPropertyValue("ThreadCount")) <= 1) {
-            StartExodusSingle();
+            StartExodusSingle(SourceCon, TargetCon);
         } else {
-            StartExodusMulti();
+            StartExodusMulti(SourceCon, TargetCon);
         }
         return;
     }
     
-    public static void StartExodusSingle() {
-        MySQLConnect SourceCon = new MySQLConnect(Util.getPropertyValue("SourceDB"));
-        MariaDBConnect TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+    public static void StartExodusSingle(DBConHandler SourceCon, DBConHandler TargetCon) {
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
         
         try {
@@ -52,14 +52,15 @@ public class Exodus {
             new Logger(LogPath + "/Exodus.err", "Error While Processing - " + e.getMessage(), true);
             e.printStackTrace();
         } finally {
+            //Execute Additional Post-Migration Scripts at the end of Migration
+            Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PostLoadStatements"));
+
             SourceCon.DisconnectDB();
             TargetCon.DisconnectDB();
         }
     }
 
-    public static void StartExodusMulti() {
-        MySQLConnect SourceCon = new MySQLConnect(Util.getPropertyValue("SourceDB"));
-        MariaDBConnect TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+    public static void StartExodusMulti(DBConHandler SourceCon, DBConHandler TargetCon) {
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
 
         //Array to store the current active threads!
@@ -69,49 +70,57 @@ public class Exodus {
 
         //Number of Parallel Tables Processing
         ThreadCount = Integer.valueOf(Util.getPropertyValue("ThreadCount"));
-        
-        //To Create new threads for each table
-        for (SchemaHandler oSchema : MyDB.getSchemaList()) {
-            if (!DryRun) {
-                //Create Migration Log Table in the Schema
-                ExodusProgress.CreateProgressLogTable(oSchema.getSchemaName());
-            }
-            for (TableHandler Tab : oSchema.getTables()) {
-                try {
-                    //Keeps track of the number of Threads started
-                    ActiveThreadCount++;
-                    
-                    //Add a new table to the list of threads. 
-                    ThreadWorker.add(new MySQLExodusMulti(Tab));
-                    ThreadWorker.get(ThreadWorker.size()-1).start();
-                    
-                    //Stop adding once the number of tables has reached the Max Allowed Thread Count as specified in the property file.
-                    while (ThreadWorker.size() == ThreadCount) {
-                        for (int CurrentThread=0; CurrentThread < ActiveThreadCount; CurrentThread++) {
-                            //Remove the completed threads so that new tables can be added to the queue
-                            if (!ThreadWorker.get(CurrentThread).isThreadActive()) {
-                                ThreadWorker.remove(CurrentThread);
-                                ActiveThreadCount--;
+        try {
+            //To Create new threads for each table
+            for (SchemaHandler oSchema : MyDB.getSchemaList()) {
+                if (!DryRun) {
+                    //Create Migration Log Table in the Schema
+                    ExodusProgress.CreateProgressLogTable(oSchema.getSchemaName());
+                }
+                for (TableHandler Tab : oSchema.getTables()) {
+                    try {
+                        //Keeps track of the number of Threads started
+                        ActiveThreadCount++;
+                        
+                        //Add a new table to the list of threads. 
+                        ThreadWorker.add(new MySQLExodusMulti(Tab));
+                        ThreadWorker.get(ThreadWorker.size()-1).start();
+                        
+                        //Stop adding once the number of tables has reached the Max Allowed Thread Count as specified in the property file.
+                        while (ThreadWorker.size() == ThreadCount) {
+                            for (int CurrentThread=0; CurrentThread < ActiveThreadCount; CurrentThread++) {
+                                //Remove the completed threads so that new tables can be added to the queue
+                                if (!ThreadWorker.get(CurrentThread).isThreadActive()) {
+                                    ThreadWorker.remove(CurrentThread);
+                                    ActiveThreadCount--;
+                                }
                             }
                         }
+                        if (TargetCon.getDBConnection().isClosed() || SourceCon.getDBConnection().isClosed()) {
+                            break;
+                        }
+                    } catch (Exception e) {
+                        MigrationErrors = true;
+                        System.out.println("Error while processing the main thread");
+                        //Log the error to the log file
+                        new Logger(LogPath + "/Exodus.err", "Error while processing the main thread - " + e.getMessage(), true);
+                        e.printStackTrace();
                     }
-                    if (TargetCon.getDBConnection().isClosed() || SourceCon.getDBConnection().isClosed()) {
-                        break;
-                    }
-                } catch (Exception e) {
-                    MigrationErrors = true;
-                    System.out.println("Error while processing the main thread");
-                    //Log the error to the log file
-                    new Logger(LogPath + "/Exodus.err", "Error while processing the main thread - " + e.getMessage(), true);
-                    e.printStackTrace();
                 }
-            }
-	        //Cleanup Table Structure Creation Threads
-	        HouseKeepThreads(ThreadWorker);
+                //Cleanup Table Structure Creation Threads
+                HouseKeepThreads(ThreadWorker);
 
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            //Execute Additional Post-Migration Scripts at the end of Migration
+            Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PostLoadStatements"));
+
+            SourceCon.DisconnectDB();
+            TargetCon.DisconnectDB();            
         }
-        SourceCon.DisconnectDB();
-        TargetCon.DisconnectDB();
     }        
 
     //Responsible for Cleaning up the Worker Threads
