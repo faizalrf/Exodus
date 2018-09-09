@@ -8,18 +8,18 @@ import java.util.List;
 
 import mariadb.migration.SchemaHandler;
 import mariadb.migration.DatabaseHandler;
-import mariadb.migration.UserHandler;
 import mariadb.migration.Util;
 
 public class MySQLDatabase implements DatabaseHandler {
-    private Connection oCon;
-    private List<SchemaHandler> oSchemaList = new ArrayList<SchemaHandler>();
-    private List<UserHandler> oUserList = new ArrayList<UserHandler>();
+    private Connection SourceCon;
+    private List<SchemaHandler> SchemaList = new ArrayList<SchemaHandler>();
+    private List<String> UserScript = new ArrayList<String>();
     
     public MySQLDatabase(Connection iCon) {
-        oCon = iCon;
-        if (oCon != null) {
+        SourceCon = iCon;
+        if (SourceCon != null) {
             setSchemaList();
+            setUserList();
         } else {
             System.out.println("Connection Not Available!");
         }
@@ -33,14 +33,14 @@ public class MySQLDatabase implements DatabaseHandler {
         ScriptSQL = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE " + Util.getPropertyValue("DatabaseToMigrate");
         
         try {
-        	oStatement = oCon.createStatement();
+        	oStatement = SourceCon.createStatement();
         	oResultSet = oStatement.executeQuery(ScriptSQL);
             String SchemaName="";
-           	oSchemaList.clear();
+           	SchemaList.clear();
             
             while (oResultSet.next()) {
             	SchemaName = oResultSet.getString("SCHEMA_NAME");
-            	oSchemaList.add(new MySQLSchema(oCon, SchemaName));
+            	SchemaList.add(new MySQLSchema(SourceCon, SchemaName));
             }
             oStatement.close();
             oResultSet.close();
@@ -50,14 +50,81 @@ public class MySQLDatabase implements DatabaseHandler {
     }
     
     public void setUserList() {
-    	oUserList = null;
+        String ScriptSQL ;
+        Statement oStatement;
+        ResultSet oResultSet;
+
+        ScriptSQL = "SELECT CONCAT(user, '@''', host, '''') User FROM mysql.user WHERE " + Util.getPropertyValue("UsersToMigrate");
+        
+        try {
+        	oStatement = SourceCon.createStatement();
+        	oResultSet = oStatement.executeQuery(ScriptSQL);
+            String UserName="";
+            
+            //Get User's list and its CREATE / GRANT scripts
+            while (oResultSet.next()) {
+            	UserName = oResultSet.getString("User");
+                setCreateUserScript(UserName);
+            }
+            oStatement.close();
+            oResultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setCreateUserScript(String UserName) {
+        String ScriptSQL, CreateUserScript;
+        Statement oStatement;
+        ResultSet oResultSet;
+
+        ScriptSQL = "SHOW CREATE USER " + UserName;
+        
+        try {
+        	oStatement = SourceCon.createStatement();
+        	oResultSet = oStatement.executeQuery(ScriptSQL);
+            
+            if (oResultSet.next()) {
+                CreateUserScript = oResultSet.getString(1);
+                CreateUserScript = CreateUserScript.substring(0, CreateUserScript.lastIndexOf("' ")+1);
+                CreateUserScript = CreateUserScript.replace("CREATE USER", "CREATE USER IF NOT EXISTS");
+                System.out.println(CreateUserScript);
+                UserScript.add(CreateUserScript);
+                setUserGrantScript(UserName);
+            }
+            oStatement.close();
+            oResultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setUserGrantScript(String UserName) {
+        String ScriptSQL;
+        Statement oStatement;
+        ResultSet oResultSet;
+
+        ScriptSQL = "SHOW GRANTS FOR " + UserName;
+        
+        try {
+        	oStatement = SourceCon.createStatement();
+        	oResultSet = oStatement.executeQuery(ScriptSQL);
+            
+            while (oResultSet.next()) {
+                UserScript.add(oResultSet.getString(1));
+            }
+            oStatement.close();
+            oResultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<String> getCreateUserScript() {
+        return UserScript;
     }
 
     public List<SchemaHandler> getSchemaList() {
-        return oSchemaList;
-    }
-
-    public List<UserHandler> getUserList() {
-    	return oUserList;
+        return SchemaList;
     }
 }

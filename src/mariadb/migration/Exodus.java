@@ -27,6 +27,13 @@ public class Exodus {
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
         
         try {
+            //Migrate Users
+            if (!DryRun) {
+                Util.ExecuteScript(TargetCon, MyDB.getCreateUserScript());
+            } else {
+                System.out.println("Skip User Accounts Migration");
+            }
+
             for (SchemaHandler oSchema : MyDB.getSchemaList()) {
                 if (!DryRun) {
                     //Create Target Schema if not already there

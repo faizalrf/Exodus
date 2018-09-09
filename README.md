@@ -156,7 +156,6 @@ MariaDB [(none)]> select version();
 | 10.3.8-MariaDB |
 +----------------+
 1 row in set (0.000 sec)
-
 ```
 
 Stop MariaDB process, copy the the mysql `datadir` to another location that we want to dedicate for MariaDB 10.3. Create all the required dedicated folders that existed for MySQL for instance, log, redo log etc.
@@ -399,10 +398,3 @@ Finally import the source code that includes the triggers as well.
 ```
 [root@mariadb-250 test]# mysql -uroot -ppassword < db_source.sql
 ```
-
-
-
-
-
-
-mysqldump -uroot mysql user --no-create-info --where="user = 'migration'" > rootuser.sql
