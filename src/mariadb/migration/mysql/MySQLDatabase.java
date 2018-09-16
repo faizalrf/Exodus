@@ -88,7 +88,6 @@ public class MySQLDatabase implements DatabaseHandler {
                 CreateUserScript = oResultSet.getString(1);
                 CreateUserScript = CreateUserScript.substring(0, CreateUserScript.lastIndexOf("' ")+1);
                 CreateUserScript = CreateUserScript.replace("CREATE USER", "CREATE USER IF NOT EXISTS");
-                System.out.println(CreateUserScript);
                 UserScript.add(CreateUserScript);
                 setUserGrantScript(UserName);
             }

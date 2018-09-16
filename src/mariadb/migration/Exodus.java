@@ -5,11 +5,10 @@ import java.util.List;
 
 import mariadb.migration.mysql.*;
 public class Exodus {
-    public static boolean DryRun, MigrationErrors;
+    public static boolean DryRun = Util.getPropertyValue("DryRun").equals("YES"), MigrationErrors;
     public static String LogPath;
 
     public static void main(String[] args) {
-        DryRun = Util.getPropertyValue("DryRun").equals("YES");
         LogPath = Util.getPropertyValue("LogPath");
         MigrationErrors = false;
         MySQLConnect SourceCon = new MySQLConnect(Util.getPropertyValue("SourceDB"));
@@ -27,23 +26,10 @@ public class Exodus {
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
         
         try {
-            //Migrate Users
-            if (!DryRun) {
-                Util.ExecuteScript(TargetCon, MyDB.getCreateUserScript());
-            } else {
-                System.out.println("Skip User Accounts Migration");
-            }
-
             for (SchemaHandler oSchema : MyDB.getSchemaList()) {
-                if (!DryRun) {
-                    //Create Target Schema if not already there
-                    if (Util.ExecuteScript(TargetCon, oSchema.getSchemaScript()) < 0) {
-                        System.out.println("\nFailed to create database, Aborting!\n");
-                        return;
-                    }
-
-                    //Create Database first then create Migration Log Table in the Schema
-                    ExodusProgress.CreateProgressLogTable(oSchema.getSchemaName());
+                //This Function creates the Progress table, Database and User accounts if needed
+                if (!PreMigrationSetup(TargetCon, MyDB, oSchema)) {
+                    return;
                 }
 
                 for (TableHandler Tab : oSchema.getTables()) {
@@ -73,42 +59,41 @@ public class Exodus {
         //Array to store the current active threads!
         List<MySQLExodusMulti> ThreadWorker = new ArrayList<MySQLExodusMulti>();
 
-        int ActiveThreadCount=0, ThreadCount;
+        int ThreadCount;
 
         //Number of Parallel Tables Processing
         ThreadCount = Integer.valueOf(Util.getPropertyValue("ThreadCount"));
         try {
             //To Create new threads for each table
             for (SchemaHandler oSchema : MyDB.getSchemaList()) {
-                if (!DryRun) {
-                    //Create Migration Log Table in the Schema
-                    ExodusProgress.CreateProgressLogTable(oSchema.getSchemaName());
+                //This Function creates the Progress table, Database and User accounts if needed
+                if (!PreMigrationSetup(TargetCon, MyDB, oSchema)) {
+                    return;
                 }
+
                 for (TableHandler Tab : oSchema.getTables()) {
                     try {
-                        //Keeps track of the number of Threads started
-                        ActiveThreadCount++;
-                        
                         //Add a new table to the list of threads. 
                         ThreadWorker.add(new MySQLExodusMulti(Tab));
                         ThreadWorker.get(ThreadWorker.size()-1).start();
-                        
+
                         //Stop adding once the number of tables has reached the Max Allowed Thread Count as specified in the property file.
                         while (ThreadWorker.size() == ThreadCount) {
-                            for (int CurrentThread=0; CurrentThread < ActiveThreadCount; CurrentThread++) {
+                            for (int CurrentThread=0; CurrentThread < ThreadWorker.size(); CurrentThread++) {
                                 //Remove the completed threads so that new tables can be added to the queue
                                 if (!ThreadWorker.get(CurrentThread).isThreadActive()) {
                                     ThreadWorker.remove(CurrentThread);
-                                    ActiveThreadCount--;
                                 }
                             }
+                            //Rest for Half a second before checking the threads status again
+                            //Thread.sleep(500);
                         }
                         if (TargetCon.getDBConnection().isClosed() || SourceCon.getDBConnection().isClosed()) {
                             break;
                         }
                     } catch (Exception e) {
                         MigrationErrors = true;
-                        System.out.println("Error while processing the main thread");
+                        System.out.println("\nError while processing the main thread");
                         //Log the error to the log file
                         new Logger(LogPath + "/Exodus.err", "Error while processing the main thread - " + e.getMessage(), true);
                         e.printStackTrace();
@@ -119,7 +104,7 @@ public class Exodus {
 
             }
         } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println("\nError: " + e.getMessage());
             e.printStackTrace();
         } finally {
             //Execute Additional Post-Migration Scripts at the end of Migration
@@ -140,7 +125,7 @@ public class Exodus {
         		if (!ThreadWorker.get(x).isThreadActive()) {
         			ThreadWorker.remove(x);
         			CurrentThreadCount--;
-        	        System.out.println("Thread Removed, Current Queue Size: " + CurrentThreadCount);
+        	        System.out.print("\nThread Removed, Current Queue Size: " + CurrentThreadCount);
         		}
         	try {
 				Thread.sleep(1000);
@@ -148,8 +133,27 @@ public class Exodus {
 				System.out.println("Thread Cleanup Exception");
                 new Logger(LogPath + "/Exodus.err", "Thread Cleanup Exception - " + e.getMessage(), true);
 				e.printStackTrace();
-			}
+            }
+            //System.out.println();
         }
         ThreadWorker.clear();
-	}
+    }
+    
+    private static boolean PreMigrationSetup(DBConHandler TargetCon, DatabaseHandler MyDB, SchemaHandler Schema) {
+        if (!DryRun) {
+            //Create Target Schema if not already there
+            if (Util.ExecuteScript(TargetCon, Schema.getSchemaScript()) < 0) {
+                System.out.println("\nFailed to create database, Aborting!\n");
+                return false;
+            }
+
+            //Create Database first then create Migration Log Table in the Schema
+            ExodusProgress.CreateProgressLogTable(Schema.getSchemaName());
+            Util.ExecuteScript(TargetCon, MyDB.getCreateUserScript());
+        } else {
+            System.out.println("\nSkip Database/User Accounts Migration");
+        }
+
+        return true;
+    }   
 }

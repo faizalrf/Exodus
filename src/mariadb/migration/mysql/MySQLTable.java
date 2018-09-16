@@ -36,7 +36,10 @@ public class MySQLTable implements TableHandler {
 		TableName = iTableName;
 		FullTableName = SchemaName + "." + TableName;
 		DeltaDBName = "ExodusDb";
-		FullDeltaTableName = DeltaDBName + "." + TableName.toLowerCase();
+
+		//Becasue Schema is common, so delta table names should be prefixed with the Schema Names
+		FullDeltaTableName = DeltaDBName + "." + SchemaName.toLowerCase() + "_" + TableName.toLowerCase();
+		
 		AdditionalCriteria = Util.getPropertyValue(FullTableName + ".AdditionalCriteria");
 
 		setMigrationSkipped();
@@ -91,23 +94,13 @@ public class MySQLTable implements TableHandler {
 		Statement oStatement;
 		ResultSet oResultSet;
 
-		/*
-		ScriptSQL = "SELECT ENGINE, ROW_FORMAT, "
-				+ "AUTO_INCREMENT, SUBSTR(TABLE_COLLATION, 1, INSTR(TABLE_COLLATION, '_')-1) TABLE_CHARSET, "
-				+ "TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES " + "WHERE TABLE_SCHEMA='" + SchemaName
-				+ "' AND TABLE_NAME = '" + TableName + "' AND TABLE_TYPE = 'BASE TABLE'";
-		*/
+		//Let Database give the proper CREATE TABLE script including all the constraints and indexex
 		ScriptSQL = "SHOW CREATE TABLE " + FullTableName;
 		try {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
 
 			if (oResultSet.next()) {
-				//TableScriptPrefix = "CREATE TABLE IF NOT EXISTS " + FullTableName + " (";
-				//TableScriptSuffix = ") ENGINE=" + oResultSet.getString("ENGINE") + " CHARACTER SET="
-				//		+ oResultSet.getString("TABLE_CHARSET") + " COLLATE=" + oResultSet.getString("TABLE_COLLATION")
-				//		+ " ROW_FORMAT=" + oResultSet.getString("ROW_FORMAT");
-				//TableScript = TableScriptPrefix + MyCol.getSQLScript() + TableScriptSuffix;
 				TableScript = oResultSet.getString(2);
 
 				//Compatibility with MariaDB
@@ -359,7 +352,7 @@ public class MySQLTable implements TableHandler {
 			// ENGINE=INNODB DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ROW_FORMAT=DYNAMIC
 			oResultSet.next();
 			RowCount = oResultSet.getLong("ROW_COUNT");
-
+			System.out.print(" [ " + Util.numberFormat.format(RowCount) + " ]");
 			oStatement.close();
 			oResultSet.close();
 		} catch (SQLException e) {

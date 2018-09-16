@@ -344,6 +344,13 @@ Afte the above files have been exported successfully, we will need to do some al
 [root@mariadb-250 test]# sed -i -e ’s/JSON/LONGBLOB/g’ db_tables.sql
 ```
 
+Generate the `CREATE USER` and `GRANT` for all the users using the following syntax and save the output to an SQL script. `SHOW CREATE USER` output will contain the hash password and can be executed as is in MariaDB. 
+
+```
+mysql> SHOW CREATE USER user@'host';
+mysql> SHOW GRANTS FOR user@'host';
+```
+
 Final stage at the source is to export the source tables's data as a FLAT text file. The script will ensure that the data is not broken in any way, if we use `|` as a column delimniter, the script will put excape characters within the exported data to make sure that if `|` exists as a text in any of the columns, it is properly escaped so that the loading system can split columns poperly.
 
 Edit `my.cnf` for MySQL and disable **`secure-file-priv`** parameter, else we wont be able to export data into files.
@@ -360,12 +367,14 @@ Add the following text in a script file and grant it 750 permissions so that its
 
 UserName=$1
 Password=$2
-#ConnString="-u${UserName} -p${Password} -S/tmp/mariadb.sock"
-ConnString="-u${UserName}"
+
+ConnString="-u${UserName} -p${Password} -S/tmp/mariadb.sock"
 TableList="SELECT CONCAT(table_schema,'.',table_name) FROM information_schema.tables WHERE table_schema NOT IN ('information_schema','performance_schema','mysql', 'sys')"
+
 mysql ${ConnString} -ANe"${TableList}" > /tmp/Tables.lst
 mkdir -p $(pwd)/out
 echo "" > $(pwd)/export.scr
+
 for Tables in `cat /tmp/Tables.lst`
 do
     DBName=`echo "${Tables}" | sed 's/\./ /g' | awk '{print $1}'`
@@ -377,7 +386,9 @@ do
     mysqldump ${ConnString} -T${DestinationFolder} --fields-terminated-by="|" --fields-escaped-by="^" --lines-terminated-by="\r\n" ${DBName} ${TableName}
     echo "mysqldump ${ConnString} -T${DestinationFolder} --fields-terminated-by=\"|\" --fields-escaped-by=\"^\" --lines-terminated-by=\"\\r\\n\" ${DBName} ${TableName}" >> $(pwd)/export.scr
 done
+
 sh $(pwd)/export.scr
+#EOF 
 ```
 
 On the target databse run the import command, this will create all the databases and its related tables without any source code (triggers, procedures etc.)

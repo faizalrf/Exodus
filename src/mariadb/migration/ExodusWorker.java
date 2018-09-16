@@ -44,13 +44,13 @@ public class ExodusWorker {
 		String SourceSelectSQL, TargetInsertSQL, ColumnType, ErrorString, OutString;
 		ResultSetMetaData SourceResultSetMeta;
 	    PreparedStatement PreparedStmt;
-		long MigratedRows=0, TotalRecords=0, CommitCount=0, SecondsTaken, RecordsPerSecond=0;
+		long MigratedRows=0, TotalRecords=0, CommitCount=0, SecondsTaken, RecordsPerSecond=0, SecondsRemaining=0;
 		float TimeforOneRecord;
 		boolean ExtraCommit=false;
 
 		//To Track Start/End and Estimate Time of Completion
 		LocalTime StartDT;
-		LocalTime EndDT;
+		//LocalTime EndDT;
 	
 	    int ColumnCount, BatchRowCounter, IntValue, OverFlow, BatchCounter=0;
 		
@@ -121,11 +121,10 @@ public class ExodusWorker {
 	        
 	        ErrorString="";
 	        BatchRowCounter=0;
-	        System.out.println("");
 			PreparedStmt.clearBatch();
 
 			StartDT = LocalTime.now();
-			EndDT = LocalTime.now();
+			//EndDT = LocalTime.now();
 			RecordsPerSecond = BATCH_SIZE;
 
 	        while (SourceResultSetObj.next()) {
@@ -251,9 +250,12 @@ public class ExodusWorker {
 							TimeforOneRecord = (float)(SecondsTaken/(float)CommitCount);
 							RecordsPerSecond = (long)(((float)CommitCount / (float)SecondsTaken));
 
-							EndDT = LocalTime.now().plusSeconds((long)((TotalRecords-CommitCount) * (TimeforOneRecord)));
+							//EndDT = LocalTime.now().plusSeconds((long)((TotalRecords-CommitCount) * (TimeforOneRecord)));
+							SecondsRemaining = (long)((TotalRecords-CommitCount) * (TimeforOneRecord));
 						}
-						OutString = LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
+						//
+						//OutString = LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
+						OutString = LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
 						System.out.print("\r" + OutString);
 						TableLog.WriteLog(OutString);
 			        }
@@ -276,8 +278,10 @@ public class ExodusWorker {
 				Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
 			}
 
-			OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
-			System.out.print("\r" + OutString);
+			//OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
+			OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
+			
+			System.out.println("\r" + OutString);
 			TableLog.WriteLog(OutString);
 	        
 			//Close Statements and ResultSet
@@ -295,7 +299,6 @@ public class ExodusWorker {
 			Prog.ProgressEnd();
 		}
 		
-		System.out.println();
 		TableLog.WriteLog("- EOF -");
 		TableLog.CloseLogFile();
 		return MigratedRows;

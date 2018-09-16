@@ -11,6 +11,7 @@ import java.sql.Statement;
 public class Util {
     public static SimpleDateFormat dateFormat = new SimpleDateFormat ("E yyyy.MM.dd 'at' hh:mm:ss a zzz");
     public static DecimalFormat numberFormat = new DecimalFormat("###,###,###,###,###");
+    public static DecimalFormat digitsFormat = new DecimalFormat("00");
     public static ExodusPropertyReader exodusPrope = new ExodusPropertyReader("Exodus.properties");
     
     public static String getPropertyValue(String propName) {
@@ -78,5 +79,17 @@ public class Util {
 			ReturnStatus = -1;
 		}
     	return ReturnStatus;
-    }
+	}
+	public static String TimeToString(long lSeconds) {
+		String SecondsRemaining="";
+		long Hours, Minutes, Seconds;
+		
+		Hours = lSeconds / 60 / 60;
+		Minutes = (lSeconds / 60) - (Hours * 60);
+		Seconds = lSeconds - (Minutes * 60);
+
+		SecondsRemaining += digitsFormat.format(Hours) + ":" + digitsFormat.format(Minutes) + ":" + digitsFormat.format(Seconds);
+
+		return SecondsRemaining;
+	}
 }
