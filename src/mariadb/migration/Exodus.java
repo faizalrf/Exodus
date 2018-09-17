@@ -6,10 +6,9 @@ import java.util.List;
 import mariadb.migration.mysql.*;
 public class Exodus {
     public static boolean DryRun = Util.getPropertyValue("DryRun").equals("YES"), MigrationErrors;
-    public static String LogPath;
+    public static String LogPath = Util.getPropertyValue("LogPath");
 
     public static void main(String[] args) {
-        LogPath = Util.getPropertyValue("LogPath");
         MigrationErrors = false;
         MySQLConnect SourceCon = new MySQLConnect(Util.getPropertyValue("SourceDB"));
         MariaDBConnect TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
