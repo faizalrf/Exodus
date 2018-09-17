@@ -169,12 +169,14 @@ public class MySQLTable implements TableHandler {
 
 			// Delta SELECT Script with OUTER JOIN and IS NULL
 			DeltaSelectScript = TableSelectScript + " LEFT OUTER JOIN " + FullDeltaTableName + " B ON " + DeltaPKColList
-					+ " WHERE " + FirstKeyCol + " IS NULL AND " + AdditionalCriteria + " ORDER BY " + PrimaryKey;
+					+ " WHERE " + FirstKeyCol + " IS NULL AND " + AdditionalCriteria;
+					// + " ORDER BY " + PrimaryKey;
 			DeltaTableScript = "CREATE TABLE IF NOT EXISTS " + FullDeltaTableName + "("
 					+ DeltaColList.substring(0, DeltaColList.length() - 1) + ") engine=MyISAM";
 
 			// Done this after already used in the previous statement
-			TableSelectScript +=  " " + AdditionalCriteria + " ORDER BY " + PrimaryKey;
+			TableSelectScript +=  " " + AdditionalCriteria;
+			// + " ORDER BY " + PrimaryKey;
 
 			//This will be handled on the main calling class...
 			MyDeltaScripts.add("CREATE DATABASE IF NOT EXISTS " + DeltaDBName);
@@ -349,7 +351,7 @@ public class MySQLTable implements TableHandler {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
 
-			// ENGINE=INNODB DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ROW_FORMAT=DYNAMIC
+			// ENGINE=INNODB DEFAULT CHARA1010CTER SET utf8 COLLATE utf8_bin ROW_FORMAT=DYNAMIC
 			oResultSet.next();
 			RowCount = oResultSet.getLong("ROW_COUNT");
 			System.out.print(" [ " + Util.numberFormat.format(RowCount) + " ]");
