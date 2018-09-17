@@ -32,7 +32,6 @@ public class ExodusWorker {
 
 		//Identify if the Table has already been partially Migrated or not!
 		DeltaProcessing = ExodusProgress.hasTablePartiallyMigrated(Table.getSchemaName(), Table.getTableName());
-		TableAlreadyMigrated = ExodusProgress.hasTableMigrationCompleted(Table.getSchemaName(), Table.getTableName());
 
 		//Execute Additional Pre-Load Scripts
 		Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PreLoadStatements"));
@@ -80,13 +79,12 @@ public class ExodusWorker {
 		}
 
 		//Check for Delta conditions and actions
+		TotalRecords = Table.getRecordCount();
 		if (DeltaProcessing) {
 			SourceSelectSQL = Table.getDeltaSelectScript();
-			TotalRecords = Table.getDeltaRecordCount();
 			TableLog.WriteLog("Delta Processing Started for - " + Table.getTableName() + " Previously Migrated " + Table.getDeltaRecordCount() + "/" + TotalRecords);
 		} else {
 			SourceSelectSQL = Table.getTableSelectScript();
-			TotalRecords = Table.getRecordCount();
 			TableLog.WriteLog("Processing Started for - " + Table.getTableName() + " Total Records to Migrate " + Util.numberFormat.format(TotalRecords));
 
 			//Try to create the target table and skip this entire process if any errors
@@ -101,7 +99,7 @@ public class ExodusWorker {
 	    //This will be used later to fill in the last prepare statement string building
 	    OverFlow = (int)(TotalRecords % BATCH_SIZE);
 	    	    
-	    //See if first records will be able to fit a single BATCH 
+		//See if first records will be able to fit a single BATCH 
 	    if (BATCH_SIZE > TotalRecords) {
 			BATCH_SIZE = (int)TotalRecords;
 	    } else {
@@ -224,7 +222,7 @@ public class ExodusWorker {
 			        PreparedStmt.addBatch();
 			        BatchRowCounter++;
 			        
-			        //Batch has reached its COMMIT point!
+					//Batch has reached its COMMIT point!
 			        if (BatchRowCounter % BATCH_SIZE == 0) {
 			        	BatchRowCounter = 0;
 			        	PreparedStmt.executeBatch();
@@ -255,7 +253,7 @@ public class ExodusWorker {
 						}
 						//
 						//OutString = LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
-						OutString = LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
+						OutString = Util.rPad(LocalTime.now() + " - Processing " + Table.getFullTableName(), 50, " ") + " -->  [" + Util.lPad(Util.numberFormat.format(CommitCount), 12, " ") + " of " + Util.lPad(Util.numberFormat.format(TotalRecords), 12, " ") + "] @ " + Util.rPad(Util.numberFormat.format(RecordsPerSecond) + "/s", 12, " ") + "  - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
 						System.out.print("\r" + OutString);
 						TableLog.WriteLog(OutString);
 			        }
@@ -279,7 +277,8 @@ public class ExodusWorker {
 			}
 
 			//OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
-			OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
+			//OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
+			OutString = Util.rPad(StartDT + " - Processing " + Table.getFullTableName(), 50, " ") + " -->  [" + Util.lPad(Util.numberFormat.format(CommitCount), 12, " ") + " of " + Util.lPad(Util.numberFormat.format(TotalRecords), 12, " ") + "] @ " + Util.rPad(Util.numberFormat.format(RecordsPerSecond) + "/s", 12, " ") + "  - COMPLETED [" + LocalTime.now() + "]";
 			
 			System.out.println("\r" + OutString);
 			TableLog.WriteLog(OutString);

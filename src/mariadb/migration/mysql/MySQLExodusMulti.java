@@ -36,8 +36,12 @@ public class MySQLExodusMulti implements Runnable {
 
 	public void run() {
     	try {
-    		ExodusWorker MySQLExodusWorker = new ExodusWorker(SourceCon, TargetCon, Table, MigrationTask);
-    		RowsMigrated = MySQLExodusWorker.Exodus();
+			if (!Table.hasTableMigrated()) {
+				ExodusWorker MySQLExodusWorker = new ExodusWorker(SourceCon, TargetCon, Table, MigrationTask);
+				RowsMigrated = MySQLExodusWorker.Exodus();
+			} else {
+				System.out.print("\nProcessing Table " + Util.rPad(Table.getFullTableName(), 43, ".") + ": " + "Already Migrated, SKIP");
+			}
     	} catch (Exception e) {
 			System.out.println("Exception While running Main Thread!");
 			new Logger(Util.getPropertyValue("LogPath") + "/Exodus.err", "Exception While running Main Thread - " + e.getMessage(), true);

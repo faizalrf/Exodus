@@ -35,4 +35,5 @@ public interface TableHandler {
     List<String> getTableConstraints();
     List<String> getCheckConstraints();
     List<String> getTriggers();
+    public boolean hasTableMigrated();
 }

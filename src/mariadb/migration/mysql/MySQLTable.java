@@ -9,6 +9,7 @@ import java.util.List;
 
 import mariadb.migration.TableHandler;
 import mariadb.migration.ColumnHandler;
+import mariadb.migration.ExodusProgress;
 import mariadb.migration.ColumnCollectionHandler;
 import mariadb.migration.Util;
 
@@ -25,7 +26,6 @@ public class MySQLTable implements TableHandler {
 	private List<String> MyConstraints = new ArrayList<String>();
 	private List<String> MyCheckConstraints = new ArrayList<String>();
 	private List<String> MyDeltaScripts = new ArrayList<String>();
-
 	private Connection oCon;
 	private long RowCount, DeltaRowCount;
 	private boolean isMigrationSkipped = false;
@@ -41,6 +41,10 @@ public class MySQLTable implements TableHandler {
 		FullDeltaTableName = DeltaDBName + "." + SchemaName.toLowerCase() + "_" + TableName.toLowerCase();
 		
 		AdditionalCriteria = Util.getPropertyValue(FullTableName + ".AdditionalCriteria");
+
+		if (AdditionalCriteria.isEmpty()) {
+			AdditionalCriteria = "1=1";
+		}
 
 		setMigrationSkipped();
 		if (isMigrationSkipped) {
@@ -128,7 +132,7 @@ public class MySQLTable implements TableHandler {
 		PrimaryKeyBind = "";
 		DeltaTableScript = "";
 
-		System.out.print("\nReading Table " + FullTableName + ".: ");
+		System.out.print("\n" + Util.rPad("Parsing Table Structure " + FullTableName, 60, ".") + ": ");
 		for (ColumnHandler Col : MyCol.getColumnList()) {
 			ColumnName = Col.getName();
 			ColumnExpression = "A." + Col.getName();
@@ -148,8 +152,10 @@ public class MySQLTable implements TableHandler {
 					FirstKeyCol = "B." + ColumnName;
 				}
 			}
-			System.out.print("*");
+			//System.out.print("*");
 		}
+		System.out.print(Util.rPad("COLUMNS [" + Util.lPad(String.valueOf(MyCol.getColumnList().size()), 3, " ") + "]", 14, " "));
+		System.out.print("-->  ROWS [" + Util.lPad(Util.numberFormat.format(RowCount), 13, " ") + "]");
 
 		if (!SelectColumnList.isEmpty()) {
 			SelectColumnList = SelectColumnList.substring(0, SelectColumnList.length() - 1);
@@ -175,7 +181,7 @@ public class MySQLTable implements TableHandler {
 					+ DeltaColList.substring(0, DeltaColList.length() - 1) + ") engine=MyISAM";
 
 			// Done this after already used in the previous statement
-			TableSelectScript +=  " " + AdditionalCriteria;
+			TableSelectScript +=  " WHERE " + AdditionalCriteria;
 			// + " ORDER BY " + PrimaryKey;
 
 			//This will be handled on the main calling class...
@@ -322,7 +328,6 @@ public class MySQLTable implements TableHandler {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-
 	}
 
 	public String getColumnList() {
@@ -345,7 +350,7 @@ public class MySQLTable implements TableHandler {
 		String ScriptSQL;
 		Statement oStatement;
 		ResultSet oResultSet;
-		ScriptSQL = "SELECT COUNT(*) ROW_COUNT FROM (SELECT 1 FROM " + SchemaName + "." + TableName + " " + AdditionalCriteria + ") SubQ";
+		ScriptSQL = "SELECT COUNT(*) ROW_COUNT FROM (SELECT 1 FROM " + SchemaName + "." + TableName + " WHERE " + AdditionalCriteria + ") SubQ";
 
 		try {
 			oStatement = oCon.createStatement();
@@ -354,7 +359,6 @@ public class MySQLTable implements TableHandler {
 			// ENGINE=INNODB DEFAULT CHARA1010CTER SET utf8 COLLATE utf8_bin ROW_FORMAT=DYNAMIC
 			oResultSet.next();
 			RowCount = oResultSet.getLong("ROW_COUNT");
-			System.out.print(" [ " + Util.numberFormat.format(RowCount) + " ]");
 			oStatement.close();
 			oResultSet.close();
 		} catch (SQLException e) {
@@ -459,4 +463,7 @@ public class MySQLTable implements TableHandler {
 		return DeltaRowCount;
 	}
 
+	public boolean hasTableMigrated() {
+		return ExodusProgress.hasTableMigrationCompleted(getSchemaName(), getTableName());
+	}
 }

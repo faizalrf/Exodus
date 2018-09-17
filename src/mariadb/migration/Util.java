@@ -92,4 +92,28 @@ public class Util {
 
 		return SecondsRemaining;
 	}
+
+	public static String lPad(String SourceStr, int FixedLen, String PadChar) {
+    	int StrLength=SourceStr.length();
+    	String TmpStr="";
+    	if (StrLength < FixedLen) {
+    		FixedLen -= StrLength;
+	    	for (int x = 0; x < FixedLen; x++) {
+	    		TmpStr += PadChar;
+	    	}
+    	}
+    	return TmpStr + SourceStr;
+    }
+	
+	public static String rPad(String SourceStr, int FixedLen, String PadChar) {
+    	int StrLength=SourceStr.length();
+    	String TmpStr="";
+    	if (StrLength < FixedLen) {
+    		FixedLen -= StrLength;
+	    	for (int x = 0; x < FixedLen; x++) {
+	    		TmpStr += PadChar;
+	    	}
+    	}
+    	return SourceStr + TmpStr;
+    }
 }

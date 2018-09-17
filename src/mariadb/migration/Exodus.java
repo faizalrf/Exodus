@@ -19,12 +19,15 @@ public class Exodus {
         } else {
             StartExodusMulti(SourceCon, TargetCon);
         }
+        System.out.println("\n\n");
         return;
     }
     
     public static void StartExodusSingle(DBConHandler SourceCon, DBConHandler TargetCon) {
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
-        
+        System.out.println("\n\n----------------------------------------------------");
+        System.out.println("Parsing Completed, Starting Single Threaded Process");
+        System.out.println("----------------------------------------------------");
         try {
             for (SchemaHandler oSchema : MyDB.getSchemaList()) {
                 //This Function creates the Progress table, Database and User accounts if needed
@@ -55,6 +58,9 @@ public class Exodus {
 
     public static void StartExodusMulti(DBConHandler SourceCon, DBConHandler TargetCon) {
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
+        System.out.println("\n\n----------------------------------------------------");
+        System.out.println("Parsing Completed, Starting Multi Threaded Process");
+        System.out.println("----------------------------------------------------");
 
         //Array to store the current active threads!
         List<MySQLExodusMulti> ThreadWorker = new ArrayList<MySQLExodusMulti>();
