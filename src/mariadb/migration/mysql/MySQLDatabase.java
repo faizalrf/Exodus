@@ -9,6 +9,7 @@ import java.util.List;
 import mariadb.migration.SchemaHandler;
 import mariadb.migration.DatabaseHandler;
 import mariadb.migration.Util;
+import mariadb.migration.Logger;
 
 public class MySQLDatabase implements DatabaseHandler {
     private Connection SourceCon;
@@ -20,6 +21,7 @@ public class MySQLDatabase implements DatabaseHandler {
         if (SourceCon != null) {
             setSchemaList();
             setUserList();
+            writeUserScript();
         } else {
             System.out.println("Connection Not Available!");
         }
@@ -125,5 +127,13 @@ public class MySQLDatabase implements DatabaseHandler {
 
     public List<SchemaHandler> getSchemaList() {
         return SchemaList;
+    }
+
+    private void writeUserScript() {
+        //Parse Through the Users list and Write to a Users.sql file.
+        new Logger(Util.getPropertyValue("DDLPath") + "/" + "Users.sql", "#Users To Migrate\n", false, false);
+        for (String SqlStr : UserScript) {
+            new Logger(Util.getPropertyValue("DDLPath") + "/" + "Users.sql", SqlStr + ";", true, false);
+        }
     }
 }
