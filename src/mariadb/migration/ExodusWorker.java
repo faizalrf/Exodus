@@ -10,7 +10,7 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
 public class ExodusWorker {
-	private boolean DeltaProcessing=false;
+	private boolean DeltaProcessing=false, MultiThreaded=false;
 	private String MigrationTask, LogPath;
 	private int BATCH_SIZE = 0;
 	private DBConHandler SourceCon, TargetCon;
@@ -35,6 +35,9 @@ public class ExodusWorker {
 
 		//Execute Additional Pre-Load Scripts
 		Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PreLoadStatements"));
+
+		//This decides how the output will be logged on Screen
+		MultiThreaded = (Integer.valueOf(Util.getPropertyValue("ThreadCount")) > 1);
 	}
 	
 	//Data Migration Logic goes here... Takes care of Delta/Full migration
@@ -247,9 +250,8 @@ public class ExodusWorker {
 							SecondsRemaining = (long)((TotalRecords-CommitCount) * (TimeforOneRecord));
 						}
 						ProgressPercent = ((float)CommitCount / (float)TotalRecords * 100f);
-						//
-						//OutString = LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
-						OutString = Util.rPad(LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> " + Util.lPad(Util.percentFormat.format(ProgressPercent) + "%", 7, " ") + " [" + Util.lPad(Util.numberFormat.format(CommitCount), 12, " ") + " / " + Util.lPad(Util.numberFormat.format(TotalRecords), 12, " ") + "] @ " + Util.rPad(Util.numberFormat.format(RecordsPerSecond) + "/s", 12, " ") + "  - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
+
+						OutString = Util.rPad(LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> " + Util.lPad(Util.percentFormat.format(ProgressPercent) + "%", 7, " ") + " [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - ETA       [" + Util.TimeToString(SecondsRemaining) + "]";
 						System.out.print("\r" + OutString);
 						TableLog.WriteLog(OutString);
 			        }
@@ -273,7 +275,7 @@ public class ExodusWorker {
 			}
 
 			//Final Output
-			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount), 12, " ") + " / " + Util.lPad(Util.numberFormat.format(TotalRecords), 12, " ") + "] @ " + Util.rPad(Util.numberFormat.format(RecordsPerSecond) + "/s", 12, " ") + "  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
+			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
 			
 			System.out.println("\r" + OutString);
 			TableLog.WriteLog(OutString);
