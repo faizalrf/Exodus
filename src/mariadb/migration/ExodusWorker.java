@@ -10,7 +10,7 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
 public class ExodusWorker {
-	private boolean DeltaProcessing=false, TableAlreadyMigrated=false;
+	private boolean DeltaProcessing=false;
 	private String MigrationTask, LogPath;
 	private int BATCH_SIZE = 0;
 	private DBConHandler SourceCon, TargetCon;
@@ -35,7 +35,6 @@ public class ExodusWorker {
 
 		//Execute Additional Pre-Load Scripts
 		Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PreLoadStatements"));
-
 	}
 	
 	//Data Migration Logic goes here... Takes care of Delta/Full migration
@@ -67,11 +66,6 @@ public class ExodusWorker {
 
 		ResultSet SourceResultSetObj;
 		Statement SourceStatementObj;
-		if (TableAlreadyMigrated) {
-			TableLog.WriteLog("Table Alread Migrated - " + Table.getTableName() + " Total Records to Migrate " + Util.numberFormat.format(TotalRecords));
-			Prog.ProgressEnd();
-			return 0;
-		}
 
 		//Create the Remote Table for Delta Processing
 		for (String DeltaTabScript : Table.getDeltaTableScript()) {
