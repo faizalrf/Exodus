@@ -132,7 +132,7 @@ public class MySQLTable implements TableHandler {
 		PrimaryKeyBind = "";
 		DeltaTableScript = "";
 
-		System.out.print("\n" + Util.rPad("Parsing Table Structure " + FullTableName, 60, ".") + ": ");
+		System.out.print(Util.rPad("Parsing Table Structure " + FullTableName, 61, " ") + "--> ");
 		for (ColumnHandler Col : MyCol.getColumnList()) {
 			ColumnName = Col.getName();
 			ColumnExpression = "A." + Col.getName();
@@ -155,7 +155,7 @@ public class MySQLTable implements TableHandler {
 			//System.out.print("*");
 		}
 		System.out.print(Util.rPad("COLUMNS [" + Util.lPad(String.valueOf(MyCol.getColumnList().size()), 3, " ") + "]", 14, " "));
-		System.out.print("-->  ROWS [" + Util.lPad(Util.numberFormat.format(RowCount), 13, " ") + "]");
+		System.out.print("-->  ROWS [" + Util.lPad(Util.numberFormat.format(RowCount), 13, " ") + "]\n");
 
 		if (!SelectColumnList.isEmpty()) {
 			SelectColumnList = SelectColumnList.substring(0, SelectColumnList.length() - 1);

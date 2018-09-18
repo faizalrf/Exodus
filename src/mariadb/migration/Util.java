@@ -12,6 +12,7 @@ public class Util {
     public static SimpleDateFormat dateFormat = new SimpleDateFormat ("E yyyy.MM.dd 'at' hh:mm:ss a zzz");
     public static DecimalFormat numberFormat = new DecimalFormat("###,###,###,###,###");
     public static DecimalFormat digitsFormat = new DecimalFormat("00");
+    public static DecimalFormat percentFormat = new DecimalFormat("###.00");
     public static ExodusPropertyReader exodusPrope = new ExodusPropertyReader("Exodus.properties");
     
     public static String getPropertyValue(String propName) {

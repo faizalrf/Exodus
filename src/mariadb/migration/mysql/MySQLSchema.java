@@ -21,7 +21,11 @@ public class MySQLSchema implements SchemaHandler {
 	private List<String> StoredFunctions = new ArrayList<String>();
 	
     public MySQLSchema(Connection iSourceCon, String iSchemaName) {
-    	SourceCon = iSourceCon;
+        System.out.println("\n\n------------------------------------------------------");
+        System.out.println("- Starting " + iSchemaName + " DB Schema Discovery");
+        System.out.println("------------------------------------------------------");
+
+        SourceCon = iSourceCon;
     	SchemaName = iSchemaName;
         setSchema();
     }

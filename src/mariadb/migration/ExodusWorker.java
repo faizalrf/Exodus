@@ -50,7 +50,8 @@ public class ExodusWorker {
 		LocalTime StartDT;
 		//LocalTime EndDT;
 	
-	    int ColumnCount, BatchRowCounter, IntValue, OverFlow, BatchCounter=0;
+		int ColumnCount, BatchRowCounter, IntValue, OverFlow, BatchCounter=0;
+		float ProgressPercent;
 		
 		byte[] BlobObj;
 		double DoubleValue;
@@ -245,9 +246,10 @@ public class ExodusWorker {
 							//EndDT = LocalTime.now().plusSeconds((long)((TotalRecords-CommitCount) * (TimeforOneRecord)));
 							SecondsRemaining = (long)((TotalRecords-CommitCount) * (TimeforOneRecord));
 						}
+						ProgressPercent = ((float)CommitCount / (float)TotalRecords * 100f);
 						//
 						//OutString = LocalTime.now() + " - Progress..: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
-						OutString = Util.rPad(LocalTime.now() + " - Processing " + Table.getFullTableName(), 50, " ") + " -->  [" + Util.lPad(Util.numberFormat.format(CommitCount), 12, " ") + " of " + Util.lPad(Util.numberFormat.format(TotalRecords), 12, " ") + "] @ " + Util.rPad(Util.numberFormat.format(RecordsPerSecond) + "/s", 12, " ") + "  - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
+						OutString = Util.rPad(LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> " + Util.lPad(Util.percentFormat.format(ProgressPercent) + "%", 7, " ") + " [" + Util.lPad(Util.numberFormat.format(CommitCount), 12, " ") + " / " + Util.lPad(Util.numberFormat.format(TotalRecords), 12, " ") + "] @ " + Util.rPad(Util.numberFormat.format(RecordsPerSecond) + "/s", 12, " ") + "  - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
 						System.out.print("\r" + OutString);
 						TableLog.WriteLog(OutString);
 			        }
@@ -270,9 +272,8 @@ public class ExodusWorker {
 				Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
 			}
 
-			//OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + (EndDT.truncatedTo(ChronoUnit.SECONDS).toString()) + "]";
-			//OutString = LocalTime.now() + " - Completed.: " + Table.getFullTableName() + " [" + Util.numberFormat.format(CommitCount) + "/" + Util.numberFormat.format(TotalRecords) + "] @ " + Util.numberFormat.format(RecordsPerSecond) + "/s - ETA [" + Util.TimeToString(SecondsRemaining) + "]";
-			OutString = Util.rPad(StartDT + " - Processing " + Table.getFullTableName(), 50, " ") + " -->  [" + Util.lPad(Util.numberFormat.format(CommitCount), 12, " ") + " of " + Util.lPad(Util.numberFormat.format(TotalRecords), 12, " ") + "] @ " + Util.rPad(Util.numberFormat.format(RecordsPerSecond) + "/s", 12, " ") + "  - COMPLETED [" + LocalTime.now() + "]";
+			//Final Output
+			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount), 12, " ") + " / " + Util.lPad(Util.numberFormat.format(TotalRecords), 12, " ") + "] @ " + Util.rPad(Util.numberFormat.format(RecordsPerSecond) + "/s", 12, " ") + "  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
 			
 			System.out.println("\r" + OutString);
 			TableLog.WriteLog(OutString);
