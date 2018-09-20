@@ -1,7 +1,7 @@
 .classpath
 .metadata
-bin/
 tmp/
+bin/
 resources/db2*.jar
 *.tmp
 *.bak
