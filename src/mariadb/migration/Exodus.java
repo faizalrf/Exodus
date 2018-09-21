@@ -91,7 +91,7 @@ public class Exodus {
                                 }
                             }
                             //Rest for Half a second before checking the threads status again
-                            Thread.sleep(500);
+                            //Thread.sleep(500);
                         }
                         if (TargetCon.getDBConnection().isClosed() || SourceCon.getDBConnection().isClosed()) {
                             break;
@@ -105,14 +105,17 @@ public class Exodus {
                     }
                 }
             }
-            //Cleanup Table Structure Creation Threads
-            HouseKeepThreads(ThreadWorker);
         } catch (Exception e) {
             System.out.println("\nError: " + e.getMessage());
             e.printStackTrace();
         } finally {
             //Execute Additional Post-Migration Scripts at the end of Migration
             Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PostLoadStatements"));
+            
+            //Cleanup Table Structure Creation Threads
+            HouseKeepThreads(ThreadWorker);
+            
+            //Disconnect from Databases
             SourceCon.DisconnectDB();
             TargetCon.DisconnectDB();            
         }

@@ -12,4 +12,4 @@ copy *.xml resources>nul 2>nul
 copy *.properties resources>nul 2>nul
 
 @echo on
-java -Xms4196m -Xmx10240m mariadb.migration.Exodus
+java -Xms6196m -Xmx10240m mariadb.migration.Exodus
