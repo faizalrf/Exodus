@@ -10,7 +10,7 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
 public class ExodusWorker {
-	private boolean DeltaProcessing=false, MultiThreaded=false;
+	private boolean DeltaProcessing=false; //, MultiThreaded=false;
 	private String MigrationTask, LogPath;
 	private int BATCH_SIZE = 0;
 	private DBConHandler SourceCon, TargetCon;
@@ -37,7 +37,7 @@ public class ExodusWorker {
 		Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PreLoadStatements"));
 
 		//This decides how the output will be logged on Screen
-		MultiThreaded = (Integer.valueOf(Util.getPropertyValue("ThreadCount")) > 1);
+		//MultiThreaded = (Integer.valueOf(Util.getPropertyValue("ThreadCount")) > 1);
 	}
 	
 	//Data Migration Logic goes here... Takes care of Delta/Full migration
@@ -47,13 +47,13 @@ public class ExodusWorker {
 	    PreparedStatement PreparedStmt;
 		long MigratedRows=0, TotalRecords=0, CommitCount=0, SecondsTaken, RecordsPerSecond=0, SecondsRemaining=0;
 		float TimeforOneRecord;
-		boolean ExtraCommit=false;
+		boolean IsLastBatchCycle = false, BatchError = false;
 
 		//To Track Start/End and Estimate Time of Completion
 		LocalTime StartDT;
 		//LocalTime EndDT;
 	
-		int ColumnCount, BatchRowCounter, IntValue, OverFlow, BatchCounter=0;
+		int ColumnCount, BatchRowCounter, IntValue, BatchCounter=0, NumberOfBatches=0, TmpBatchSize=0, RerunBatchRowCounter=0;
 		float ProgressPercent;
 		
 		byte[] BlobObj;
@@ -95,19 +95,22 @@ public class ExodusWorker {
 		
 	    //Calculate How many extra records after perfect batches of BATCH_SIZE
 	    //This will be used later to fill in the last prepare statement string building
-	    OverFlow = (int)(TotalRecords % BATCH_SIZE);
+	    //OverFlow = (int)(TotalRecords % BATCH_SIZE);
 	    	    
 		//See if first records will be able to fit a single BATCH 
 	    if (BATCH_SIZE > TotalRecords) {
 			BATCH_SIZE = (int)TotalRecords;
-	    } else {
-			ExtraCommit=true;
 		}
+
+		//This will be used handle the last batch for a resultset
+		NumberOfBatches = (int)(TotalRecords / BATCH_SIZE);
 
 		TargetInsertSQL = Table.getTargetInsertScript();
 		
 		try {
-			SourceStatementObj = SourceCon.getDBConnection().createStatement();
+			//Reverse Scrollable Resultset
+			SourceStatementObj = SourceCon.getDBConnection().createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+
 			SourceResultSetObj = SourceStatementObj.executeQuery(SourceSelectSQL);
 			//Get the Meta data of the Source ResultSet, this will be used to get the list of columns in the ResultSet.
 			SourceResultSetMeta = SourceResultSetObj.getMetaData();
@@ -142,7 +145,8 @@ public class ExodusWorker {
 			                    break;
 			                case "TIMESTAMP": PreparedStmt.setTimestamp(Col, SourceResultSetObj.getTimestamp(Col)); 
 		                    	break;
-			                case "DATE": PreparedStmt.setDate(Col, SourceResultSetObj.getDate(Col));
+			                case "DATE": 
+			                case "DATETIME": PreparedStmt.setDate(Col, SourceResultSetObj.getDate(Col));
 			                    break;
 			                case "TIME": PreparedStmt.setTime(Col, SourceResultSetObj.getTime(Col));
 			                    break;
@@ -218,21 +222,56 @@ public class ExodusWorker {
 			        }
 			        
 			        PreparedStmt.addBatch();
-			        BatchRowCounter++;
-			        
-					//Batch has reached its COMMIT point!
-			        if (BatchRowCounter % BATCH_SIZE == 0) {
-			        	BatchRowCounter = 0;
-			        	PreparedStmt.executeBatch();
-						
-						//Total Records Migrated
-						CommitCount += BATCH_SIZE;
-						BatchCounter++;
-						
+					BatchRowCounter++;
+
+					//Run Rerun Bath Counter only for Re-Run condition
+					if (TmpBatchSize > 0) {
+						RerunBatchRowCounter++;
+					}
+					
+					//Batch has reached its COMMIT point or its the last batch which may \
+					//be less than theperfect batch size, we still want to process it
+			        if (BatchRowCounter % BATCH_SIZE == 0 || IsLastBatchCycle) {
+						BatchError=false;
+
+						try {
+			        		PreparedStmt.executeBatch();
+						} catch (SQLException ex) {
+							//Only if its not a RERUN then declare an error to trigger a rerun loop
+							if (RerunBatchRowCounter == 0) {
+								BatchError = true;
+							}
+							throw new SQLException(ex);
+						} finally {
+							//Once Rerun batch is complete, reset the BATCH SIZE back to original value
+							if (TmpBatchSize > 0 && RerunBatchRowCounter % TmpBatchSize == 0) {
+								System.out.println("\n******************************************************");
+								System.out.println("Batch Rerun Completed, Continuing in normal Batch Mode");
+								System.out.println("******************************************************");
+								BATCH_SIZE = TmpBatchSize;
+								RerunBatchRowCounter = 0;
+								TmpBatchSize = 0;
+							}
+						}
+												
 						TargetCon.getDBConnection().commit();
+
+						//Only Increase batch counter if its not a RERUN, because that batch has already been counted
+						if (TmpBatchSize == 0) {
+							BatchCounter++;
+							//Total Records Migrated
+							CommitCount += BATCH_SIZE;
+						}
+
+						BatchRowCounter = 0;
 
 						//Log Progress for the Table
     	                Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
+
+						//This will force the commit to execute for the last batch as well
+						if (NumberOfBatches == BatchCounter) {
+							IsLastBatchCycle = true;
+						}
 
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
 						if (BatchCounter % 10 == 0) {
@@ -246,7 +285,7 @@ public class ExodusWorker {
 							TimeforOneRecord = (float)(SecondsTaken/(float)CommitCount);
 							RecordsPerSecond = (long)(((float)CommitCount / (float)SecondsTaken));
 
-							//EndDT = LocalTime.now().plusSeconds((long)((TotalRecords-CommitCount) * (TimeforOneRecord)));
+							//Remaining Seconds based on the "Total Records [take] Already Committed" records
 							SecondsRemaining = (long)((TotalRecords-CommitCount) * (TimeforOneRecord));
 						}
 						ProgressPercent = ((float)CommitCount / (float)TotalRecords * 100f);
@@ -255,24 +294,37 @@ public class ExodusWorker {
 						System.out.print("\r" + OutString);
 						TableLog.WriteLog(OutString);
 			        }
-			        
 				} catch (SQLException e) {
 					TargetCon.getDBConnection().rollback();
 					new Logger(LogPath + "/" + Table.getFullTableName() + ".err", e.getMessage(), true);
 					ErrorString="";
 					e.printStackTrace();
 				}
+
+				if (BatchError) {
+					for (int RevCounter=0; RevCounter < BatchRowCounter; RevCounter++) {
+						SourceResultSetObj.previous();
+					}
+					if (BatchRowCounter > 0) {
+						System.out.println("\n***********************************************************************");
+						System.out.println("Error in the Batch Execution, Retrying the batch using Single Row Mode!");
+						System.out.println("***********************************************************************");
+					}
+					TmpBatchSize = BATCH_SIZE;
+					BatchRowCounter = 0;
+					BATCH_SIZE = 1;
+				}
 			}
 			
-			//Only if the batch requires an extra commit
-			if (ExtraCommit) {
-				//Perform the final Commit!
-				PreparedStmt.executeBatch();
-				CommitCount += OverFlow;
-				TargetCon.getDBConnection().commit();
-				//Log Final Progress for the Table
-				Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
-			}
+//			//Only if the batch requires an extra commit
+//			if (ExtraCommit) {
+//				//Perform the final Commit!
+//				PreparedStmt.executeBatch();
+//				CommitCount += OverFlow;
+//				TargetCon.getDBConnection().commit();
+//				//Log Final Progress for the Table
+//				Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
+//			}
 
 			//Final Output
 			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
