@@ -4,9 +4,6 @@ clear
 
 mkdir -p resources
 
-if [ ! -f resources/mariadb-java-client-2.2.7.jar ]
-then
-   cp *.jar *.xml *.properties resources
-fi
+cp *.jar *.xml *.properties resources
 
 java -Xms4196m -Xmx10240m mariadb.migration.Exodus

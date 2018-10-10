@@ -113,7 +113,10 @@ public class ExodusProgress {
 		String sqlStatement = "";
 		try {
 			//Delta Records are lDeltaRecords - lRecordsCount
-			sqlStatement = "UPDATE " + SchemaName + ".MigrationLog SET TotalRecords = " + TotalRecords + ", DeltaRecords = " + (lDeltaRecords - lRecordsCount) + ", RecordsLoaded = " + lRecordsCount + ", RecordsUpdated = " + lRecordsUpdated + " WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "' AND SerialNo = " + SerialNo;
+			//if (TotalRecords - lRecordsCount < 0)
+			//	System.out.println("Error!!!");
+				
+			sqlStatement = "UPDATE " + SchemaName + ".MigrationLog SET TotalRecords = " + TotalRecords + ", DeltaRecords = " + (TotalRecords - lRecordsCount) + ", RecordsLoaded = " + lRecordsCount + ", RecordsUpdated = " + lRecordsUpdated + " WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "' AND SerialNo = " + SerialNo;
 			StatementObj = TargetCon.getDBConnection().createStatement();
 			StatementObj.executeUpdate(sqlStatement);
 			TargetCon.getDBConnection().commit();

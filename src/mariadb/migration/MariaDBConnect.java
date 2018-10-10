@@ -29,7 +29,7 @@ public class MariaDBConnect implements DBConHandler {
         dbName = UC.getDBName();
         dbUserName = UC.getUserName();
         dbPassword = UC.getPassword();
-        dbUrl="jdbc:mariadb://" + hostName + ":" + portNumber.toString() + "/" + dbName + "?" + Util.getPropertyValue("SourceConnectParams");
+        dbUrl="jdbc:mariadb://" + hostName + ":" + portNumber.toString() + "/" + dbName + "?" + Util.getPropertyValue("TargetConnectParams");
         dbConnection = ConnectDB();
     }
     

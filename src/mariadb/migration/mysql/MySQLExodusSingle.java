@@ -36,7 +36,7 @@ public class MySQLExodusSingle {
 			if (!Table.hasTableMigrated()) {
 				RowsMigrated = MySQLExodusWorker.Exodus();
 			} else {
-				System.out.println("Processing Table " + Util.rPad(Table.getFullTableName(), 44, " ") + "--> " + "Already Migrated, SKIPPED!");
+				System.out.println("Processing Table " + Util.rPad(Table.getFullTableName(), 63, " ") + "--> " + "Already Migrated, SKIPPED!");
 			}
 		} catch (SQLException e) {
 			new Logger(Util.getPropertyValue("LogPath") + "/Exodus.err", e.getMessage(), true);

@@ -15,8 +15,8 @@ import mariadb.migration.Util;
 
 public class MySQLTable implements TableHandler {
 	private String SchemaName, TableName, TableScript, DeltaSelectScript, FullTableName, FullDeltaTableName, SelectColumnList, 
-					RawColumnList, InsertBindList, PrimaryKey, PrimaryKeyBind, TableSelectScript, TargetInsertScript, MyPrimaryKeyScript, AdditionalCriteria,
-					DeltaDBName;
+					RawColumnList, InsertBindList, PrimaryKey, PrimaryKeyBind, TableSelectScript, TargetInsertScript, MyPrimaryKeyScript, 
+					AdditionalCriteria, WHERECriteria, DeltaDBName;
 	private ColumnCollectionHandler MyCol;
 
 	private List<String> MyPKCols = new ArrayList<String>();
@@ -41,9 +41,10 @@ public class MySQLTable implements TableHandler {
 		FullDeltaTableName = DeltaDBName + "." + SchemaName.toLowerCase() + "_" + TableName.toLowerCase();
 		
 		AdditionalCriteria = Util.getPropertyValue(FullTableName + ".AdditionalCriteria");
+		WHERECriteria = Util.getPropertyValue(FullTableName + ".WHERECriteria");
 
-		if (AdditionalCriteria.isEmpty()) {
-			AdditionalCriteria = "1=1";
+		if (WHERECriteria.isEmpty()) {
+			WHERECriteria = "1=1";
 		}
 
 		setMigrationSkipped();
@@ -131,12 +132,16 @@ public class MySQLTable implements TableHandler {
 		PrimaryKey = "";
 		PrimaryKeyBind = "";
 		DeltaTableScript = "";
-
-		System.out.print(Util.rPad("Parsing Table Structure " + FullTableName, 61, " ") + "--> ");
+	
+		System.out.print(Util.rPad("Parsing Table Structure " + FullTableName, 80, " ") + "--> ");
 		for (ColumnHandler Col : MyCol.getColumnList()) {
 			ColumnName = Col.getName();
-			ColumnExpression = "A." + Col.getName();
 
+			if (Col.getDataType().toUpperCase().equals("DATETIME") && Col.getNulls().toUpperCase().contains("NOT")) {
+				ColumnExpression = "COALESCE(A." + Col.getName() + ", '0000-00-00 00:00:00') AS " + Col.getName();
+			} else {
+				ColumnExpression = "A." + Col.getName();
+			}
 			SelectColumnList += ColumnExpression + ",";
 			RawColumnList += ColumnName + ",";
 			InsertBindList += "?,";
@@ -145,7 +150,7 @@ public class MySQLTable implements TableHandler {
 				PrimaryKey += ColumnExpression + ",";
 				PrimaryKeyBind += "?,";
 				DeltaColList += ColumnName + " " + Col.getColumnDataType() + ",";
-
+				
 				// To use for IS NULL in the DELTA SELECT;
 				DeltaPKColList += "B." + ColumnName + " = " + ColumnExpression + " AND ";
 				if (FirstKeyCol.isEmpty()) {
@@ -174,16 +179,18 @@ public class MySQLTable implements TableHandler {
 			DeltaPKColList = DeltaPKColList.substring(0, DeltaPKColList.length() - 5);
 
 			// Delta SELECT Script with OUTER JOIN and IS NULL
-			DeltaSelectScript = TableSelectScript + " LEFT OUTER JOIN " + FullDeltaTableName + " B ON " + DeltaPKColList
-					+ " WHERE " + FirstKeyCol + " IS NULL AND " + AdditionalCriteria;
-					// + " ORDER BY " + PrimaryKey;
+			//DeltaSelectScript = TableSelectScript + " LEFT OUTER JOIN " + FullDeltaTableName + " B ON " + DeltaPKColList
+			//		+ " WHERE " + FirstKeyCol + " IS NULL AND " + WHERECriteria;
+			//TODO Work on the Delta Logic 
+			DeltaSelectScript = TableSelectScript + " WHERE " + WHERECriteria + " " + AdditionalCriteria;
+
 			DeltaTableScript = "CREATE TABLE IF NOT EXISTS " + FullDeltaTableName + "("
 					+ DeltaColList.substring(0, DeltaColList.length() - 1) + ") engine=MyISAM";
 
 			// Done this after already used in the previous statement
-			TableSelectScript +=  " WHERE " + AdditionalCriteria;
-			// + " ORDER BY " + PrimaryKey;
-
+			TableSelectScript +=  " WHERE " + WHERECriteria + " " + AdditionalCriteria;
+			//System.out.println(TableSelectScript);
+			
 			//This will be handled on the main calling class...
 			MyDeltaScripts.add("CREATE DATABASE IF NOT EXISTS " + DeltaDBName);
 			MyDeltaScripts.add(DeltaTableScript);
@@ -350,7 +357,7 @@ public class MySQLTable implements TableHandler {
 		String ScriptSQL;
 		Statement oStatement;
 		ResultSet oResultSet;
-		ScriptSQL = "SELECT COUNT(*) ROW_COUNT FROM (SELECT 1 FROM " + SchemaName + "." + TableName + " WHERE " + AdditionalCriteria + ") SubQ";
+		ScriptSQL = "SELECT COUNT(*) ROW_COUNT FROM (SELECT 1 FROM " + SchemaName + "." + TableName + " WHERE " + WHERECriteria + ") SubQ";
 
 		try {
 			oStatement = oCon.createStatement();

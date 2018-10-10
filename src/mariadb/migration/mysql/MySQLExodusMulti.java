@@ -40,7 +40,7 @@ public class MySQLExodusMulti implements Runnable {
 				ExodusWorker MySQLExodusWorker = new ExodusWorker(SourceCon, TargetCon, Table, MigrationTask);
 				RowsMigrated = MySQLExodusWorker.Exodus();
 			} else {
-				System.out.println("Processing Table " + Util.rPad(Table.getFullTableName(), 44, " ") + "--> " + "Already Migrated, SKIPPED!");
+				System.out.println("Processing Table " + Util.rPad(Table.getFullTableName(), 63, " ") + "--> " + "Already Migrated, SKIPPED!");
 			}
     	} catch (Exception e) {
 			System.out.println("Exception While running Main Thread!");

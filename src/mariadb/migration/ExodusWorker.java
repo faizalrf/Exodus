@@ -47,7 +47,10 @@ public class ExodusWorker {
 	    PreparedStatement PreparedStmt;
 		long MigratedRows=0, TotalRecords=0, CommitCount=0, SecondsTaken, RecordsPerSecond=0, SecondsRemaining=0;
 		float TimeforOneRecord;
-		boolean IsLastBatchCycle = false, BatchError = false;
+		boolean BatchError = false;
+
+		//Dont need it
+		//IsLastBatchCycle = false, 
 
 		//To Track Start/End and Estimate Time of Completion
 		LocalTime StartDT;
@@ -92,14 +95,11 @@ public class ExodusWorker {
 			}
 			new Logger(Util.getPropertyValue("DDLPath") + "/" + Table.getFullTableName() + ".sql", Table.getTableScript() + ";", false, false);
 		}
-		
-	    //Calculate How many extra records after perfect batches of BATCH_SIZE
-	    //This will be used later to fill in the last prepare statement string building
-	    //OverFlow = (int)(TotalRecords % BATCH_SIZE);
-	    	    
-		//See if first records will be able to fit a single BATCH 
+			    	    
+		//See if first records will be able to fit a single BATCH, IF Total Record Count is ZERO, SET BATCH SIZE to 1
+		//THIS IS TO AVOID DIVIDE BY ZERO errors
 	    if (BATCH_SIZE > TotalRecords) {
-			BATCH_SIZE = (int)TotalRecords;
+			BATCH_SIZE = (int)(TotalRecords == 0 ? 1 : TotalRecords);
 		}
 
 		//This will be used handle the last batch for a resultset
@@ -133,6 +133,7 @@ public class ExodusWorker {
 
 			            switch (ColumnType) {
 		                	case "INTEGER":
+			                case "INTEGER UNSIGNED": 
 			                	IntValue = SourceResultSetObj.getInt(Col);
 			                    if(SourceResultSetObj.wasNull())
 			                    	PreparedStmt.setNull(Col, java.sql.Types.INTEGER);
@@ -146,7 +147,7 @@ public class ExodusWorker {
 			                case "TIMESTAMP": PreparedStmt.setTimestamp(Col, SourceResultSetObj.getTimestamp(Col)); 
 		                    	break;
 			                case "DATE": 
-			                case "DATETIME": PreparedStmt.setDate(Col, SourceResultSetObj.getDate(Col));
+							case "DATETIME": PreparedStmt.setDate(Col, SourceResultSetObj.getDate(Col));
 			                    break;
 			                case "TIME": PreparedStmt.setTime(Col, SourceResultSetObj.getTime(Col));
 			                    break;
@@ -209,7 +210,10 @@ public class ExodusWorker {
 			                	else   
 			                		PreparedStmt.setNull(Col, java.sql.Types.BLOB);
 			                    break;
-			                case "CLOB": 
+							case "TINYCLOB":
+							case "CLOB": 
+							case "MEDIUMCLOB":
+							case "LONGCLOB":
 			                	PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
 			                    break;
 			                case "SQLXML": PreparedStmt.setClob(Col, SourceResultSetObj.getClob(Col));
@@ -220,7 +224,7 @@ public class ExodusWorker {
 					        	throw new SQLException(ErrorString);
 			            }
 			        }
-			        
+					
 			        PreparedStmt.addBatch();
 					BatchRowCounter++;
 
@@ -231,7 +235,7 @@ public class ExodusWorker {
 					
 					//Batch has reached its COMMIT point or its the last batch which may \
 					//be less than theperfect batch size, we still want to process it
-			        if (BatchRowCounter % BATCH_SIZE == 0 || IsLastBatchCycle) {
+			        if (BatchRowCounter % BATCH_SIZE == 0) {
 						BatchError=false;
 
 						try {
@@ -262,15 +266,14 @@ public class ExodusWorker {
 							//Total Records Migrated
 							CommitCount += BATCH_SIZE;
 						}
-
 						BatchRowCounter = 0;
 
 						//Log Progress for the Table
     	                Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
 
-						//This will force the commit to execute for the last batch as well
+						//This will Recalculate the Batch size based on the last remaining records after the perfect batches have completed
 						if (NumberOfBatches == BatchCounter) {
-							IsLastBatchCycle = true;
+							BATCH_SIZE = (int)(TotalRecords - CommitCount);
 						}
 
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
@@ -290,7 +293,7 @@ public class ExodusWorker {
 						}
 						ProgressPercent = ((float)CommitCount / (float)TotalRecords * 100f);
 
-						OutString = Util.rPad(LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> " + Util.lPad(Util.percentFormat.format(ProgressPercent) + "%", 7, " ") + " [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - ETA       [" + Util.TimeToString(SecondsRemaining) + "]";
+						OutString = Util.rPad(LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> " + Util.lPad(Util.percentFormat.format(ProgressPercent) + "%", 7, " ") + " [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - ETA       [" + Util.TimeToString(SecondsRemaining) + "]";
 						System.out.print("\r" + OutString);
 						TableLog.WriteLog(OutString);
 			        }
@@ -327,7 +330,7 @@ public class ExodusWorker {
 //			}
 
 			//Final Output
-			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 60, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
+			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
 			
 			System.out.println("\r" + OutString);
 			TableLog.WriteLog(OutString);
