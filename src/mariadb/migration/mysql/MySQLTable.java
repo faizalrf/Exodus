@@ -305,33 +305,35 @@ public class MySQLTable implements TableHandler {
 	}
 
 	public void setTriggers() {
-		String ScriptSQL, TriggerScript = "";
-		Statement oStatement;
-		ResultSet oResultSet;
+		String ScriptSQL, TriggerScriptSQL, TriggerScript = "";
+		Statement oStatement, TriggerScriptStmt;
+		ResultSet oResultSet, TriggerScriptRs;
 
-		ScriptSQL = "SELECT A.TRIGGER_SCHEMA, A.TRIGGER_NAME, A.ACTION_STATEMENT, A.ACTION_ORIENTATION, A.ACTION_TIMING, A.EVENT_MANIPULATION, CONCAT('\"', SUBSTR(DEFINER, 1, INSTR(DEFINER, '@')-1), '\"@\"', SUBSTR(DEFINER, INSTR(DEFINER, '@')+1), '\"') DEFINER, "
-				+ "COALESCE(CASE WHEN A.ACTION_ORDER = 1 THEN "
-				+ "CONCAT('FOLLOWS ', (SELECT B.TRIGGER_NAME FROM information_schema.triggers B "
-				+ "WHERE B.EVENT_OBJECT_SCHEMA = A.EVENT_OBJECT_SCHEMA AND B.EVENT_OBJECT_TABLE = A.EVENT_OBJECT_TABLE "
-				+ "AND B.ACTION_ORDER = A.ACTION_ORDER - 1), '') ELSE '' END, '') FOLLOWS FROM information_schema.triggers A "
-				+ "WHERE A.EVENT_OBJECT_SCHEMA = '" + SchemaName + "'AND A.EVENT_OBJECT_TABLE = '" + TableName
-				+ "' ORDER BY A.ACTION_ORDER";
+		ScriptSQL = "SELECT TRIGGER_SCHEMA, TRIGGER_NAME FROM information_schema.triggers "
+				+ "WHERE EVENT_OBJECT_SCHEMA = '" + SchemaName + "'AND EVENT_OBJECT_TABLE = '" + TableName + "'";
 
 		try {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
 
 			while (oResultSet.next()) {
-				TriggerScript = "CREATE DEFINER=" + oResultSet.getString("DEFINER") + " TRIGGER "
-						+ oResultSet.getString("TRIGGER_SCHEMA") + "." + oResultSet.getString("TRIGGER_NAME") + " "
-						+ oResultSet.getString("ACTION_TIMING") + " " + oResultSet.getString("EVENT_MANIPULATION")
-						+ " ON " + FullTableName + " FOR EACH " + oResultSet.getString("ACTION_ORIENTATION") + " "
-						+ oResultSet.getString("FOLLOWS") + "\n" + oResultSet.getString("ACTION_STATEMENT");
-				MyTriggers.add(TriggerScript);
+				TriggerScriptStmt = oCon.createStatement();
+				TriggerScriptSQL = "SHOW CREATE TRIGGER " + 
+									oResultSet.getString("TRIGGER_SCHEMA") + "." + 
+									oResultSet.getString("TRIGGER_NAME");
+
+				TriggerScriptRs = TriggerScriptStmt.executeQuery(TriggerScriptSQL);
+
+				while (TriggerScriptRs.next()) {
+					TriggerScript = TriggerScriptRs.getString(3);
+					MyTriggers.add(TriggerScript);
+				}
+				TriggerScriptRs.close();
+				TriggerScriptStmt.close();
 			}
 
-			oStatement.close();
 			oResultSet.close();
+			oStatement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

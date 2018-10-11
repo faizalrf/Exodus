@@ -140,14 +140,13 @@ public class ExodusWorker {
 			                    else
 			                    	PreparedStmt.setInt(Col, IntValue);
 			                    break;
-			                case "VARCHAR": PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
-		                    	break;
+			                case "VARCHAR":
 			                case "CHAR": PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
 			                    break;
-			                case "TIMESTAMP": PreparedStmt.setTimestamp(Col, SourceResultSetObj.getTimestamp(Col)); 
+							case "DATETIME": 
+							case "TIMESTAMP": PreparedStmt.setTimestamp(Col, SourceResultSetObj.getTimestamp(Col)); 
 		                    	break;
-			                case "DATE": 
-							case "DATETIME": PreparedStmt.setDate(Col, SourceResultSetObj.getDate(Col));
+			                case "DATE": PreparedStmt.setDate(Col, SourceResultSetObj.getDate(Col));
 			                    break;
 			                case "TIME": PreparedStmt.setTime(Col, SourceResultSetObj.getTime(Col));
 			                    break;

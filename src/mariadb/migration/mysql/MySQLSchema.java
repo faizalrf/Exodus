@@ -114,15 +114,20 @@ public class MySQLSchema implements SchemaHandler {
         String ConstraintSQL;
         Statement oStatement;
         ResultSet oResultSet;
-        ConstraintSQL = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES " +
-        				"WHERE TABLE_SCHEMA='" + SchemaName + "' AND TABLE_TYPE = 'BASE TABLE'";
+        ConstraintSQL = "SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES " +
+        				"WHERE TABLE_SCHEMA='" + SchemaName + "' AND TABLE_TYPE IN ('BASE TABLE', 'VIEW')";
 
         try {
         	oStatement = SourceCon.createStatement();
         	oResultSet = oStatement.executeQuery(ConstraintSQL);
             
             while (oResultSet.next()) {
-            	SchemaTables.add(new MySQLTable(SourceCon, SchemaName, oResultSet.getString("TABLE_NAME")));
+                if (oResultSet.getString("TABLE_TYPE").equals("VIEW")) {
+                    //oResultSet.getString("TABLE_NAME")
+                    setViewsList();
+                } else {
+                    SchemaTables.add(new MySQLTable(SourceCon, SchemaName, oResultSet.getString("TABLE_NAME")));
+                }
             }
             oStatement.close();
             oResultSet.close();
