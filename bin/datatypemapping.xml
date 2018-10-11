@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+<DataTypeMapping>
+	<source type="INTEGER">
+		<target>INTEGER</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="VARCHAR">
+		<target>VARCHAR</target>
+		<sizeable>YES</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="TIMESTAMP">
+		<target>TIMESTAMP</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="DATE">
+		<target>DATE</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="DATETIME">
+		<target>DATETIME</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="CHARACTER">
+		<target>CHAR</target>
+		<sizeable>YES</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="TIME">
+		<target>TIME</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="BIGINT">
+		<target>BIGINT</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="BLOB">
+		<target>TINYBLOB</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>1</minsize>
+		<maxsize>255</maxsize>
+	</source>
+	<source type="BLOB">
+		<target>BLOB</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>266</minsize>
+		<maxsize>65535</maxsize>
+	</source>
+	<source type="BLOB">
+		<target>MEDIUMBLOB</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>65536</minsize>
+		<maxsize>16777215</maxsize>
+	</source>
+	<source type="BLOB">
+		<target>LONGBLOB</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>16777216</minsize>
+		<maxsize>4294967295</maxsize>
+	</source>	
+	<source type="VARGRAPHIC">
+		<target>LONGBLOB</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>16777216</minsize>
+		<maxsize>4294967295</maxsize>
+	</source>
+	<source type="GRAPHIC">
+		<target>LONGBLOB</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>16777216</minsize>
+		<maxsize>4294967295</maxsize>
+	</source>
+	<source type="CLOB">
+		<target>TINYTEXT</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>1</minsize>
+		<maxsize>255</maxsize>
+	</source>
+	<source type="CLOB">
+		<target>TEXT</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>266</minsize>
+		<maxsize>65535</maxsize>
+	</source>
+	<source type="CLOB">
+		<target>MEDIUMTEXT</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>65536</minsize>
+		<maxsize>16777215</maxsize>
+	</source>
+	<source type="CLOB">
+		<target>LONGTEXT</target>
+		<sizeable>LOB</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>16777216</minsize>
+		<maxsize>4294967295</maxsize>
+	</source>	
+	<source type="DECIMAL">
+		<target>DECIMAL</target>
+		<sizeable>YES</sizeable>
+		<scaleable>YES</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="DOUBLE">
+		<target>DOUBLE</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+		<source type="FLOAT">
+		<target>DOUBLE</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="REAL">
+		<target>REAL</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="LONG VARCHAR">
+		<target>TEXT</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="SMALLINT">
+		<target>SMALLINT</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+	<source type="XML">
+		<target>LONGTEXT</target>
+		<sizeable>NO</sizeable>
+		<scaleable>NO</scaleable>
+		<minsize>0</minsize>
+		<maxsize>0</maxsize>
+	</source>
+</DataTypeMapping>
