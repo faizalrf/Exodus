@@ -1,7 +1,10 @@
 .classpath
 .metadata
 tmp/
-bin/
+ddl/*.sql
+logs/*.log
+bin/ddl/*.sql
+bin/logs/*.log
 resources/db2*.jar
 *.tmp
 *.bak
