@@ -86,8 +86,8 @@ public class MySQLTable implements TableHandler {
 				isMigrationSkipped = (oResultSet.getLong("ROW_COUNT") == 0);
 			}
 
-			oStatement.close();
 			oResultSet.close();
+			oStatement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -116,8 +116,8 @@ public class MySQLTable implements TableHandler {
 				//System.out.println(TableScript);
 			}
 			
-			oStatement.close();
 			oResultSet.close();
+			oStatement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -232,8 +232,8 @@ public class MySQLTable implements TableHandler {
 				MyPKCols.add(oResultSet.getString("COLUMN_NAME"));
 			}
 
-			oStatement.close();
 			oResultSet.close();
+			oStatement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -265,8 +265,8 @@ public class MySQLTable implements TableHandler {
 				MyForeignKeys.add(FKScript);
 			}
 
-			oStatement.close();
 			oResultSet.close();
+			oStatement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -297,8 +297,8 @@ public class MySQLTable implements TableHandler {
 				MyIndexes.add(IndexScript);
 			}
 
-			oStatement.close();
 			oResultSet.close();
+			oStatement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -368,8 +368,8 @@ public class MySQLTable implements TableHandler {
 			// ENGINE=INNODB DEFAULT CHARA1010CTER SET utf8 COLLATE utf8_bin ROW_FORMAT=DYNAMIC
 			oResultSet.next();
 			RowCount = oResultSet.getLong("ROW_COUNT");
-			oStatement.close();
 			oResultSet.close();
+			oStatement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -389,8 +389,8 @@ public class MySQLTable implements TableHandler {
 			oResultSet.next();
 			DeltaRowCount = oResultSet.getLong("ROW_COUNT");
 
-			oStatement.close();
 			oResultSet.close();
+			oStatement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

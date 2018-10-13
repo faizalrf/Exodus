@@ -8,6 +8,8 @@ import java.util.List;
 
 import mariadb.migration.SchemaHandler;
 import mariadb.migration.TableHandler;
+import mariadb.migration.ViewHandler;
+import mariadb.migration.SourceCodeHandler;
 
 public class MySQLSchema implements SchemaHandler {
 	private String SchemaName, SchemaScript;
@@ -15,10 +17,9 @@ public class MySQLSchema implements SchemaHandler {
 	
 	//Object Array to store Table OBJECTs for the Schema/Database
 	private List<TableHandler> SchemaTables = new ArrayList<TableHandler>(); 
-	private List<String> SchemaViews = new ArrayList<String>();
+	private List<ViewHandler> SchemaViews = new ArrayList<ViewHandler>();
+	private List<SourceCodeHandler> StoredProcedures = new ArrayList<SourceCodeHandler>();
 	private List<String> SchemaSequences = new ArrayList<String>();
-	private List<String> StoredProcedures = new ArrayList<String>();
-	private List<String> StoredFunctions = new ArrayList<String>();
 	
     public MySQLSchema(Connection iSourceCon, String iSchemaName) {
         System.out.println("\n\n------------------------------------------------------");
@@ -28,41 +29,6 @@ public class MySQLSchema implements SchemaHandler {
         SourceCon = iSourceCon;
     	SchemaName = iSchemaName;
         setSchema();
-    }
-
-    void setSchemaOld() {
-        String ScriptSQL ;
-        Statement oStatement;
-        ResultSet oResultSet;
-
-        ScriptSQL = "SELECT SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='" + SchemaName + "'";
-        
-        try {
-        	oStatement = SourceCon.createStatement();
-        	oResultSet = oStatement.executeQuery(ScriptSQL);
-            
-            while (oResultSet.next()) {
-            	SchemaScript = "CREATE DATABASE IF NOT EXISTS " + oResultSet.getString("SCHEMA_NAME") + " CHARACTER SET " + oResultSet.getString("DEFAULT_COLLATION_NAME") + " COLLATE " + oResultSet.getString("DEFAULT_COLLATION_NAME");
-            	//Read the Tables List for the Current Schema.
-            	setTables();
-            	
-            	//Read the Views List and Scripts for the Current Schema.
-            	setViewsList();
-            	
-            	//Read the Sequence List for the Current Schema.
-            	setSequencesList();
-            	
-            	//Read the Stored Procedures List for the Current Schema.
-            	setStoredProceduresList();
-            	
-            	//Get the Stored Functions List for the Current Schema.
-            	setStoredFunctionsList();
-            }
-            oStatement.close();
-            oResultSet.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 
     private void setSchema() {
@@ -80,20 +46,15 @@ public class MySQLSchema implements SchemaHandler {
                 SchemaScript = oResultSet.getString(2);
                 SchemaScript = SchemaScript.replace("CREATE DATABASE", "CREATE DATABASE IF NOT EXISTS");
 
-            	//Read the Tables List for the Current Schema.
+            	//Read the Tables List for the Current Schema, this will also handle VIEWS in the schema.
             	setTables();
-            	
-            	//Read the Views List and Scripts for the Current Schema.
-            	setViewsList();
-            	
+            	            	
             	//Read the Sequence List for the Current Schema.
             	setSequencesList();
             	
             	//Read the Stored Procedures List for the Current Schema.
-            	setStoredProceduresList();
+            	setSourceCodeList();
             	
-            	//Get the Stored Functions List for the Current Schema.
-            	setStoredFunctionsList();
             }
             oStatement.close();
             oResultSet.close();
@@ -122,9 +83,9 @@ public class MySQLSchema implements SchemaHandler {
         	oResultSet = oStatement.executeQuery(ConstraintSQL);
             
             while (oResultSet.next()) {
+                //If the object is a VIEW add to View's List, else to Table's List
                 if (oResultSet.getString("TABLE_TYPE").equals("VIEW")) {
-                    //oResultSet.getString("TABLE_NAME")
-                    setViewsList();
+                    SchemaViews.add(new MySQLView(SourceCon, SchemaName, oResultSet.getString("TABLE_NAME")));
                 } else {
                     SchemaTables.add(new MySQLTable(SourceCon, SchemaName, oResultSet.getString("TABLE_NAME")));
                 }
@@ -136,16 +97,35 @@ public class MySQLSchema implements SchemaHandler {
         }
     }
 
-    public void setViewsList() {};
-    public void setSequencesList() {};
-    public void setStoredProceduresList() {};
-    public void setStoredFunctionsList() {};
+    public void setSequencesList() {}
+
+    public void setSourceCodeList() {
+        String ConstraintSQL;
+        Statement oStatement;
+        ResultSet oResultSet;
+        ConstraintSQL = "SELECT ROUTINE_NAME, ROUTINE_TYPE FROM INFORMATION_SCHEMA.ROUTINES " +
+        				"WHERE ROUTINE_SCHEMA='" + SchemaName + "' AND ROUTINE_TYPE IN ('PROCEDURE', 'FUNCTION')";
+
+        try {
+        	oStatement = SourceCon.createStatement();
+        	oResultSet = oStatement.executeQuery(ConstraintSQL);
+            
+            while (oResultSet.next()) {
+                //ROUTINE_TYPE is either PROCEDURE or FUNCTION!
+                StoredProcedures.add(new MySQLSourceCode(SourceCon, SchemaName, oResultSet.getString("ROUTINE_NAME"), oResultSet.getString("ROUTINE_TYPE")));
+            }
+            oStatement.close();
+            oResultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
     
     public List<TableHandler> getTables() {
     	return SchemaTables;
     }
     
-    public List<String> getViewsList() {
+    public List<ViewHandler> getViewsList() {
     	return SchemaViews;
     }
     
@@ -153,12 +133,8 @@ public class MySQLSchema implements SchemaHandler {
     	return SchemaSequences;
     }
     
-    public List<String> getStoredProceduresList() {
+    public List<SourceCodeHandler> getSourceCodeList() {
     	return StoredProcedures;
-    }
-    
-    public List<String> getStoredFunctionsList() {
-    	return StoredFunctions;
     }
 
 }

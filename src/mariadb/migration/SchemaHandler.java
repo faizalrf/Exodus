@@ -7,14 +7,11 @@ public interface SchemaHandler {
     String getSchemaScript();
     
     void setTables();
-    void setViewsList();
     void setSequencesList();
-    void setStoredProceduresList();
-    void setStoredFunctionsList();
+    void setSourceCodeList();
 
     List<TableHandler> getTables();
-    List<String> getViewsList();
+    List<ViewHandler> getViewsList();
+    List<SourceCodeHandler> getSourceCodeList();
     List<String> getSequencesList();
-    List<String> getStoredProceduresList();
-    List<String> getStoredFunctionsList();
 }
