@@ -321,6 +321,7 @@ public class MySQLTable implements TableHandler {
 				TriggerScriptSQL = "SHOW CREATE TRIGGER " + 
 									oResultSet.getString("TRIGGER_SCHEMA") + "." + 
 									oResultSet.getString("TRIGGER_NAME");
+				//New Trigger Code
 
 				TriggerScriptRs = TriggerScriptStmt.executeQuery(TriggerScriptSQL);
 
