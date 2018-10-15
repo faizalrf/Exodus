@@ -328,6 +328,7 @@ public class MySQLTable implements TableHandler {
 					TriggerScript = TriggerScriptRs.getString(3);
 					MyTriggers.add(TriggerScript);
 				}
+				
 				TriggerScriptRs.close();
 				TriggerScriptStmt.close();
 			}

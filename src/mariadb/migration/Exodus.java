@@ -18,6 +18,8 @@ public class Exodus {
         } else {
             StartExodusMulti(SourceCon, TargetCon);
         }
+
+        
         System.out.println("\n\n");
         return;
     }
@@ -39,6 +41,10 @@ public class Exodus {
                         MySQLExodusSingle SingleTable = new MySQLExodusSingle(Tab);
                         SingleTable.start();
                     }
+                }
+
+                if (!DryRun) {
+                    CreateOtherObjects(oSchema);
                 }
             }
             
@@ -104,6 +110,10 @@ public class Exodus {
                         e.printStackTrace();
                     }
                 }
+
+                if (!DryRun) {
+                    CreateOtherObjects(oSchema);
+                }
             }
         } catch (Exception e) {
             System.out.println("\nError: " + e.getMessage());
@@ -161,5 +171,31 @@ public class Exodus {
         }
 
         return true;
+    }
+
+    public static void CreateOtherObjects(SchemaHandler oSchema) {
+        //Create Views
+        /*
+            mysql -u username INFORMATION_SCHEMA --skip-column-names --batch -e "select table_name from tables where table_type = 'VIEW' and table_schema = 'database'" | xargs mysqldump -u username database > views.sql
+        */
+        for (ViewHandler View : oSchema.getViewsList()) {
+
+        }
+        
+        //Create Triggers
+        /*
+            mysqldump --routines --no-create-info --no-data --no-create-db --skip-opt mydb > sourcecode.sql
+        */
+        for (SourceCodeHandler Source : oSchema.getSourceCodeList()) {
+
+        }
+
+        //Create Stored Procedures / Functions
+        for (TableHandler Tab : oSchema.getTables()) {
+            for (String Trigger: Tab.getTriggers()) {
+
+            }
+        }
+
     }
 }
