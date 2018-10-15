@@ -7,7 +7,8 @@ src/logs/*.err
 bin/ddl/*.sql
 bin/logs/*.log
 bin/logs/*.err
-resources/db2*.jar
+bin/db2*.
+resources/db2*.
 *.tmp
 *.bak
 *.swp
