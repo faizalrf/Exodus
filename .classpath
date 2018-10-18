@@ -11,10 +11,10 @@
 	<classpathentry kind="lib" path="/home/faisal/Work/Java/Exodus/resources/db2jcc.jar"/>
 	<classpathentry kind="lib" path="/home/faisal/Work/Java/Exodus/resources/db2jcc_license_cu.jar"/>
 	<classpathentry kind="lib" path="/home/faisal/Work/Java/Exodus/resources/db2jcc4.jar"/>
-	<classpathentry kind="lib" path="/home/faisal/Work/Java/Exodus/resources/mariadb-java-client-2.2.7.jar"/>
+	<classpathentry kind="lib" path="/home/faisal/Work/Java/Exodus/resources/mariadb-java-client-2.3.0.jar"/>
 	<classpathentry kind="lib" path="/home/faisal/Work/Java/Exodus/resources/mysql-connector-java-8.0.12.jar"/>
 	-->
-	<classpathentry kind="lib" path="C:\Users\faisa\OneDrive\Work\Java\Exodus\resources\mariadb-java-client-2.2.7.jar"/>
+	<classpathentry kind="lib" path="C:\Users\faisa\OneDrive\Work\Java\Exodus\resources\mariadb-java-client-2.3.0.jar"/>
 	<classpathentry kind="lib" path="C:\Users\faisa\OneDrive\Work\Java\Exodus\resources\mysql-connector-java-8.0.12.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
