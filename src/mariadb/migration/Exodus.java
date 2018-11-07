@@ -172,7 +172,7 @@ public class Exodus {
         return true;
     }
 
-    //TODO Create Other Ojects Logic! 
+    //TODO Create Other Ojects Logic, and FAST! 
     public static void CreateOtherObjects(SchemaHandler oSchema) {
         //Create Views
         /*
