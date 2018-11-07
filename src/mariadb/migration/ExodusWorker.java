@@ -317,16 +317,6 @@ public class ExodusWorker {
 					BATCH_SIZE = 1;
 				}
 			}
-			
-//			//Only if the batch requires an extra commit
-//			if (ExtraCommit) {
-//				//Perform the final Commit!
-//				PreparedStmt.executeBatch();
-//				CommitCount += OverFlow;
-//				TargetCon.getDBConnection().commit();
-//				//Log Final Progress for the Table
-//				Prog.LogInsertProgress(TotalRecords, CommitCount, CommitCount);
-//			}
 
 			//Final Output
 			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
