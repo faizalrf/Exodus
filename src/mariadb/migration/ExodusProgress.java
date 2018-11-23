@@ -75,10 +75,11 @@ public class ExodusProgress {
 				StatementObj.executeUpdate(sqlStatement);
 				
 				StatementObj.close();
-				TargetCon.DisconnectDB();
 			} catch (SQLException e) {
 				System.out.println("*** Failed to create Migration Log Tables ***");
 				e.printStackTrace();
+			} finally {
+				TargetCon.DisconnectDB();
 			}
 		}
 	}
@@ -186,9 +187,10 @@ public class ExodusProgress {
 		boolean hasMigrationCompleted=false;
 		ResultSet ResultSetObj;
 		Statement StatementObj;
+		DBConHandler TargetCon;
 
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
-			DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+			TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
 			String sqlStatement = "SELECT Count(*) as MigrationCount, (CASE WHEN TotalRecords = 0 THEN -1 ELSE Sum(TotalRecords) - Sum(RecordsLoaded) END) AS Migrated FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
 			try {
@@ -203,6 +205,8 @@ public class ExodusProgress {
 				
 			} catch (SQLException e) {
 				e.printStackTrace();
+			} finally {
+				TargetCon.DisconnectDB();
 			}
 		}
 		return hasMigrationCompleted;
@@ -212,8 +216,10 @@ public class ExodusProgress {
 		boolean hasTableMigrated=false;
 		ResultSet ResultSetObj;
 		Statement StatementObj;
+		DBConHandler TargetCon;
+
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
-			DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+			TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 		
 			String sqlStatement = "SELECT Count(*) MigrationCount, SUM(TotalRecords) - Sum(RecordsLoaded) AS hasMigrated, MAX(RecordsLoaded) LoadedRecords FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
 			try {
@@ -228,6 +234,8 @@ public class ExodusProgress {
 				
 			} catch (SQLException e) {
 				e.printStackTrace();
+			} finally {
+				TargetCon.DisconnectDB();
 			}
 		}
 		return hasTableMigrated;
@@ -237,9 +245,11 @@ public class ExodusProgress {
 	public static int getSerialNo(String SchemaName, String TableName) {
 		ResultSet ResultSetObj;
 		Statement StatementObj;
+		DBConHandler TargetCon;
 		int iSerialNo=0;
+
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
-			DBConHandler TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+			TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 			
 			String sqlStatement = "SELECT COUNT(*) AS SerialNo FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
 			try {
@@ -254,6 +264,8 @@ public class ExodusProgress {
 				
 			} catch (SQLException e) {
 				e.printStackTrace();
+			} finally {
+				TargetCon.DisconnectDB();
 			}
 		}
 		return iSerialNo;
