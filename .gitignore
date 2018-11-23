@@ -4,10 +4,7 @@ tmp/
 src/ddl/*.sql
 src/logs/*.log
 src/logs/*.err
-bin/ddl/*.sql
-bin/logs/*.log
-bin/logs/*.err
-bin/db2*.jar
+bin/
 resources/db2*.jar
 *.tmp
 *.bak
