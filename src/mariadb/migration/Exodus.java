@@ -19,7 +19,7 @@ public class Exodus {
             StartExodusMulti(SourceCon, TargetCon);
         }
 
-        System.out.println("\n\n\n\n");
+        System.out.println("\n\n");
         return;
     }
     
