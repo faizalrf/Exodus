@@ -57,3 +57,7 @@ local.properties
 .cache-main
 .scala_dependencies
 .worksheet
+
+#To Cleanup Git issues!
+#git rm -rf --cached .
+#git add .
