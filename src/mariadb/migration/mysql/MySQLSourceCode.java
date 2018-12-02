@@ -31,7 +31,7 @@ public class MySQLSourceCode implements SourceCodeHandler {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
 			if (oResultSet.next()) {
-				SourceCodeScript = oResultSet.getString(3);
+				SourceCodeScript = oResultSet.getString(3).replace("CREATE", "CREATE OR REPLACE");
 			}
 
 			oResultSet.close();

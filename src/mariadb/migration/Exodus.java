@@ -42,8 +42,9 @@ public class Exodus {
                     }
                 }
 
+                //Create Additional Objects if available
                 if (!DryRun) {
-                    CreateOtherObjects(oSchema);
+                    CreateOtherObjects(oSchema, TargetCon);
                 }
             }
             
@@ -110,8 +111,9 @@ public class Exodus {
                     }
                 }
 
+                //Create Additional Objects if available
                 if (!DryRun) {
-                    CreateOtherObjects(oSchema);
+                    CreateOtherObjects(oSchema, TargetCon);
                 }
             }
         } catch (Exception e) {
@@ -149,7 +151,6 @@ public class Exodus {
                 new Logger(LogPath + "/Exodus.err", "Thread Cleanup Exception - " + e.getMessage(), true);
 				e.printStackTrace();
             }
-            //System.out.println();
         }
         ThreadWorker.clear();
     }
@@ -172,30 +173,46 @@ public class Exodus {
         return true;
     }
 
-    //TODO Create Other Ojects Logic, and FAST! 
-    public static void CreateOtherObjects(SchemaHandler oSchema) {
+    public static void CreateOtherObjects(SchemaHandler oSchema, DBConHandler TargetCon) {
         //Create Views
         /*
             mysql -u username INFORMATION_SCHEMA --skip-column-names --batch -e "select table_name from tables where table_type = 'VIEW' and table_schema = 'database'" | xargs mysqldump -u username database > views.sql
         */
-        for (ViewHandler View : oSchema.getViewsList()) {
-
-        }
-        
-        //Create Triggers
-        /*
-            mysqldump --routines --no-create-info --no-data --no-create-db --skip-opt mydb > sourcecode.sql
-        */
-        for (SourceCodeHandler Source : oSchema.getSourceCodeList()) {
-
-        }
-
-        //Create Stored Procedures / Functions
-        for (TableHandler Tab : oSchema.getTables()) {
-            for (String Trigger: Tab.getTriggers()) {
-
+        System.out.println("-");
+        if (Util.getPropertyValue("CreateViews").equals("YES")) {
+            System.out.println("Generating Views");
+            for (ViewHandler View : oSchema.getViewsList()) {
+                Util.ExecuteScript(TargetCon, View.getViewScript());
+                new Logger(Util.getPropertyValue("DDLPath") + "/Views.sql", View.getViewScript() + ";\n", true, false);
             }
         }
 
+        //Create Triggers/PLSQL
+        /*
+            mysqldump --routines --no-create-info --no-data --no-create-db --skip-opt mydb > sourcecode.sql
+        */
+        if (Util.getPropertyValue("CreatePLSQL").equals("YES")) {
+            System.out.println("Generating Stored Routines Scripts");
+            new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", "DELIMITER //", true, false);
+
+            for (SourceCodeHandler Source : oSchema.getSourceCodeList()) {
+                Util.ExecuteScript(TargetCon, Source.getSourceScript());
+                new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSourceScript() + "//\n", true, false);
+            }
+            new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", "DELIMITER ;", true, false);
+        }
+
+        if (Util.getPropertyValue("CreateTriggers").equals("YES")) {
+            System.out.println("Generating Trigger Scripts");
+            new Logger(Util.getPropertyValue("DDLPath") + "/Triggers.sql", "DELIMITER //", true, false);
+            //Create Stored Procedures / Functions
+            for (TableHandler Tab : oSchema.getTables()) {
+                for (String TriggerScript: Tab.getTriggers()) {
+                    Util.ExecuteScript(TargetCon, TriggerScript);
+                    new Logger(Util.getPropertyValue("DDLPath") + "/Triggers.sql", TriggerScript + "//\n", true, false);
+                }
+            }
+            new Logger(Util.getPropertyValue("DDLPath") + "/Triggers.sql", "DELIMITER ;", true, false);
+        }
     }
 }

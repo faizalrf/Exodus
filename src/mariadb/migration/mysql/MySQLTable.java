@@ -326,7 +326,7 @@ public class MySQLTable implements TableHandler {
 				TriggerScriptRs = TriggerScriptStmt.executeQuery(TriggerScriptSQL);
 
 				while (TriggerScriptRs.next()) {
-					TriggerScript = TriggerScriptRs.getString(3);
+					TriggerScript = TriggerScriptRs.getString(3).replace("CREATE", "CREATE OR REPLACE");
 					MyTriggers.add(TriggerScript);
 				}
 				

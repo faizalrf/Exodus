@@ -30,7 +30,7 @@ public class MySQLView implements ViewHandler {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
 			if (oResultSet.next()) {
-				ViewScript = oResultSet.getString(2);
+				ViewScript = oResultSet.getString(2).replace("CREATE", "CREATE OR REPLACE");
 			}
 
 			oResultSet.close();
