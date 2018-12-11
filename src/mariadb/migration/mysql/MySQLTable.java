@@ -322,10 +322,10 @@ public class MySQLTable implements TableHandler {
 									oResultSet.getString("TRIGGER_SCHEMA") + "." + 
 									oResultSet.getString("TRIGGER_NAME");
 				//New Trigger Code
-
 				TriggerScriptRs = TriggerScriptStmt.executeQuery(TriggerScriptSQL);
 
-				while (TriggerScriptRs.next()) {
+				//One Trigger row per Trigger name
+				if (TriggerScriptRs.next()) {
 					TriggerScript = TriggerScriptRs.getString(3).replace("CREATE", "CREATE OR REPLACE");
 					MyTriggers.add(TriggerScript);
 				}
