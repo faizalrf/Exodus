@@ -66,8 +66,9 @@ public class ExodusWorker {
 		float FloatValue;
 		
 		if (MigrationTask.equals("SKIP")) {
-			System.out.println("\nDry Run, Table " + Table.getFullTableName() + " Skipped");
-			TableLog.WriteLog("Dry Run, Table " + Table.getFullTableName() + " Skipped");
+			System.out.println("\nTable " + Table.getFullTableName() + " Skipped");
+			TableLog.WriteLog("Table " + Table.getFullTableName() + " Skipped");
+			Prog.ProgressEnd();
 			return 0;
 		}
 
@@ -140,7 +141,11 @@ public class ExodusWorker {
 			                    else
 			                    	PreparedStmt.setInt(Col, IntValue);
 			                    break;
-			                case "VARCHAR":
+							case "TINYCLOB":
+							case "CLOB": 
+							case "MEDIUMCLOB":
+							case "LONGCLOB":
+							case "VARCHAR":
 			                case "CHAR": PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
 			                    break;
 							case "DATETIME": 
@@ -208,12 +213,6 @@ public class ExodusWorker {
 			                		PreparedStmt.setBytes(Col, BlobObj);
 			                	else   
 			                		PreparedStmt.setNull(Col, java.sql.Types.BLOB);
-			                    break;
-							case "TINYCLOB":
-							case "CLOB": 
-							case "MEDIUMCLOB":
-							case "LONGCLOB":
-			                	PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
 			                    break;
 			                case "SQLXML": PreparedStmt.setClob(Col, SourceResultSetObj.getClob(Col));
 			                    break;

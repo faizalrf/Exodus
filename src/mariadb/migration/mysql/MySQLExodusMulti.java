@@ -27,7 +27,7 @@ public class MySQLExodusMulti implements Runnable {
 		ThreadName = SchemaName + "." + TableName;
 		
 		//Dry Run or normal Migration
-		if (Util.getPropertyValue("DryRun").equals("NO")) {
+		if (Util.getPropertyValue("DryRun").equals("NO") && Util.getPropertyValue("MigrateData").equals("YES")) {
 			MigrationTask = "MIGRATE";
 		} else {
 			MigrationTask = "SKIP";
