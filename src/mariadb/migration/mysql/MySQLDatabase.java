@@ -15,6 +15,7 @@ public class MySQLDatabase implements DatabaseHandler {
     private Connection SourceCon;
     private List<SchemaHandler> SchemaList = new ArrayList<SchemaHandler>();
     private List<String> UserScript = new ArrayList<String>();
+    private List<String> UserGrantsScript = new ArrayList<String>();
     
     public MySQLDatabase(Connection iCon) {
         SourceCon = iCon;
@@ -112,7 +113,7 @@ public class MySQLDatabase implements DatabaseHandler {
         	oResultSet = oStatement.executeQuery(ScriptSQL);
             
             while (oResultSet.next()) {
-                UserScript.add(oResultSet.getString(1));
+                UserGrantsScript.add(oResultSet.getString(1));
             }
             oStatement.close();
             oResultSet.close();
@@ -124,6 +125,11 @@ public class MySQLDatabase implements DatabaseHandler {
     public List<String> getCreateUserScript() {
         return UserScript;
     }
+    
+    //TODO write logic to use User Grants Sctript and execute on the DB after Table's migration
+    public List<String> getUserGrantsScript() {
+        return UserGrantsScript;
+    }
 
     public List<SchemaHandler> getSchemaList() {
         return SchemaList;
@@ -133,6 +139,11 @@ public class MySQLDatabase implements DatabaseHandler {
         //Parse Through the Users list and Write to a Users.sql file.
         new Logger(Util.getPropertyValue("DDLPath") + "/" + "Users.sql", "#Users To Migrate\n", false, false);
         for (String SqlStr : UserScript) {
+            new Logger(Util.getPropertyValue("DDLPath") + "/" + "Users.sql", SqlStr + ";", true, false);
+        }
+
+        //Write User Grants separately to the DDL script
+        for (String SqlStr : UserGrantsScript) {
             new Logger(Util.getPropertyValue("DDLPath") + "/" + "Users.sql", SqlStr + ";", true, false);
         }
     }

@@ -30,7 +30,8 @@ public class MySQLView implements ViewHandler {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
 			if (oResultSet.next()) {
-				ViewScript = oResultSet.getString(2).replace("CREATE", "CREATE OR REPLACE").replace(" `"+ViewName+"`", " `" + SchemaName + "`." + "`"+ViewName+"`" );
+				//Add SchemaName before the object name, can be enclosed between `` or ""
+				ViewScript = oResultSet.getString(2).replace("CREATE", "CREATE OR REPLACE").replace(" `"+ViewName+"`", " `" + SchemaName + "`." + "`"+ViewName+"`").replace(" \""+ViewName+"\"", " \"" + SchemaName + "\"." + "\""+ViewName+"\"");
 			}
 
 			oResultSet.close();

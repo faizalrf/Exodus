@@ -6,5 +6,6 @@ public interface DatabaseHandler {
     void setCreateUserScript(String UserName);
     void setUserGrantScript(String UserName);
     List<String> getCreateUserScript();
+    List<String> getUserGrantsScript();
     List<SchemaHandler> getSchemaList();
 }
