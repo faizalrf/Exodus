@@ -3,7 +3,7 @@
 	<DataProvider type="MySQL">
 		<UserName>migration</UserName>
 		<Password>!QAZ2wsx3edc</Password>
-		<HostName>192.168.56.150</HostName>
+		<HostName>192.168.56.158</HostName>
 		<PortNumber>3306</PortNumber>
 		<DatabaseName>mysql</DatabaseName>
 	</DataProvider>
