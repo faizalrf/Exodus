@@ -42,13 +42,16 @@ public class Exodus {
                     }
                 }
 
-                //Create Additional Objects if available
                 if (!DryRun) {
+                    //Create PLSQL, Triggers, Views etc.
                     CreateOtherObjects(oSchema, TargetCon);
+                    //Create User Grants after all the Tables/Views and PLSQL have been created
+                    CreateUserGrants(TargetCon, MyDB);
                 }
             }
             
-        } catch (Exception e) {
+        } catch (Exception e) {                //Create Additional Objects if available
+
             System.out.println("Error While Processing");
             new Logger(LogPath + "/Exodus.err", "Error While Processing - " + e.getMessage(), true);
             e.printStackTrace();
@@ -111,9 +114,11 @@ public class Exodus {
                     }
                 }
 
-                //Create Additional Objects if available
                 if (!DryRun) {
+                    //Create PLSQL, Triggers, Views etc.
                     CreateOtherObjects(oSchema, TargetCon);
+                    //Create User Grants after all the Tables/Views and PLSQL have been created
+                    CreateUserGrants(TargetCon, MyDB);
                 }
             }
         } catch (Exception e) {
@@ -215,4 +220,14 @@ public class Exodus {
             new Logger(Util.getPropertyValue("DDLPath") + "/Triggers.sql", "DELIMITER ;", true, false);
         }
     }
+    
+    private static void CreateUserGrants(DBConHandler TargetCon, DatabaseHandler MyDB) {
+        if (Util.getPropertyValue("UserGrants").equals("YES")) {
+            //Grants for the User Accounts
+            Util.ExecuteScript(TargetCon, MyDB.getUserGrantsScript());
+        } else {
+            System.out.println("\nSkip User Grants");
+        }
+    }
+
 }
