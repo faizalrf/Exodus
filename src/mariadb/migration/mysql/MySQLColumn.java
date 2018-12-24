@@ -1,6 +1,6 @@
 package mariadb.migration.mysql;
-import mariadb.migration.ColumnHandler;
 
+import mariadb.migration.ColumnHandler;
 public class MySQLColumn implements ColumnHandler {
     private String ColumnName;
     private int Position;

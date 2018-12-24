@@ -1,7 +1,6 @@
 package mariadb.migration;
 
 import java.util.List;
-
 public interface TableHandler {
     void setMigrationSkipped();
     void setConstraints();

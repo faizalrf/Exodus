@@ -1,4 +1,5 @@
 package mariadb.migration;
+
 import java.util.List;
 public interface DatabaseHandler {
 	void setSchemaList();
