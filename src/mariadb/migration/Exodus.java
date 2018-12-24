@@ -178,6 +178,7 @@ public class Exodus {
         return true;
     }
 
+    //Migrate PLSQL, Triggers, Views based on Property CreateViews,  CreatePLSQL, CreateTriggers    
     public static void CreateOtherObjects(SchemaHandler oSchema, DBConHandler TargetCon) {
         //Create Views
         /*
@@ -221,6 +222,7 @@ public class Exodus {
         }
     }
     
+    //Migrate User Grants to MariaDB based on UserGrants property
     private static void CreateUserGrants(DBConHandler TargetCon, DatabaseHandler MyDB) {
         if (Util.getPropertyValue("UserGrants").equals("YES")) {
             //Grants for the User Accounts
