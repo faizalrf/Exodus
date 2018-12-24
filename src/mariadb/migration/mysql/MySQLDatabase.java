@@ -127,7 +127,6 @@ public class MySQLDatabase implements DatabaseHandler {
         return UserScript;
     }
     
-    //TODO write logic to use User Grants Sctript and execute on the DB after Table's migration
     public List<String> getUserGrantsScript() {
         return UserGrantsScript;
     }

@@ -181,7 +181,7 @@ public class MySQLTable implements TableHandler {
 			// Delta SELECT Script with OUTER JOIN and IS NULL
 			//DeltaSelectScript = TableSelectScript + " LEFT OUTER JOIN " + FullDeltaTableName + " B ON " + DeltaPKColList
 			//		+ " WHERE " + FirstKeyCol + " IS NULL AND " + WHERECriteria;
-			//TODO Work on the Delta Logic 
+			//TODO Work on the Delta Logic, Probably not gonna happen! 
 			DeltaSelectScript = TableSelectScript + " WHERE " + WHERECriteria + " " + AdditionalCriteria;
 
 			DeltaTableScript = "CREATE TABLE IF NOT EXISTS " + FullDeltaTableName + "("
