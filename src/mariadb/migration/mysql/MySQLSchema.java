@@ -98,7 +98,7 @@ public class MySQLSchema implements SchemaHandler {
         }
     }
 
-    public void setSequencesList() {}
+public void setSequencesList() { /* No Sequences in MySQL */ }
 
     public void setSourceCodeList() {
         String ConstraintSQL;
@@ -137,5 +137,4 @@ public class MySQLSchema implements SchemaHandler {
     public List<SourceCodeHandler> getSourceCodeList() {
     	return StoredProcedures;
     }
-
 }
