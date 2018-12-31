@@ -42,15 +42,11 @@ public class MySQLMain {
                         SingleTable.start();
                     }
                 }
-
-                if (!DryRun) {
-                    //Create PLSQL, Triggers, Views etc.
-                    CreateOtherObjects(oSchema, TargetCon);
-                    //Create User Grants after all the Tables/Views and PLSQL have been created
-                    CreateUserGrants(TargetCon, MyDB);
-                }
-            }
-            
+                //Create PLSQL, Triggers, Views etc.
+                CreateOtherObjects(oSchema, TargetCon);
+            }            
+            //Create User Grants after all the Tables/Views and PLSQL have been created
+            CreateUserGrants(TargetCon, MyDB);
         } catch (Exception e) {
             System.out.println("Error While Processing");
             new Logger(LogPath + "/Exodus.err", "Error While Processing - " + e.getMessage(), true);
@@ -113,14 +109,11 @@ public class MySQLMain {
                         e.printStackTrace();
                     }
                 }
-
-                if (!DryRun) {
-                    //Create PLSQL, Triggers, Views etc.
-                    CreateOtherObjects(oSchema, TargetCon);
-                    //Create User Grants after all the Tables/Views and PLSQL have been created
-                    CreateUserGrants(TargetCon, MyDB);
-                }
+                //Create PLSQL, Triggers, Views etc.
+                CreateOtherObjects(oSchema, TargetCon);
             }
+            //Create User Grants after all the Tables/Views and PLSQL have been created
+            CreateUserGrants(TargetCon, MyDB);
         } catch (Exception e) {
             System.out.println("\nError: " + e.getMessage());
             e.printStackTrace();
@@ -180,15 +173,19 @@ public class MySQLMain {
 
     //Migrate PLSQL, Triggers, Views based on Property CreateViews,  CreatePLSQL, CreateTriggers    
     public void CreateOtherObjects(SchemaHandler oSchema, DBConHandler TargetCon) {
-        System.out.println("-");
+        if (DryRun) {
+            return;
+        }
+
         if (Util.getPropertyValue("CreateViews").equals("YES")) {
-            System.out.println("Generating Views");
+            System.out.println("-\nMigrating Views...");
 
             //Create Views
             for (ViewHandler View : oSchema.getViewsList()) {
                 Util.ExecuteScript(TargetCon, View.getViewScript());
                 new Logger(Util.getPropertyValue("DDLPath") + "/Views.sql", View.getViewScript() + ";\n", true, false);
             }
+            System.out.println("Migration of Views Completed...");
         }
 
         //Create Triggers/PLSQL
@@ -196,7 +193,7 @@ public class MySQLMain {
             mysqldump --routines --no-create-info --no-data --no-create-db --skip-opt mydb > sourcecode.sql
         */
         if (Util.getPropertyValue("CreatePLSQL").equals("YES")) {
-            System.out.println("Generating Stored Routines Scripts");
+            System.out.println("-\nMigrating Stored Routines Scripts...");
             new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", "DELIMITER //", true, false);
             
             //Create Stored Procedures / Functions
@@ -205,10 +202,11 @@ public class MySQLMain {
                 new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSourceScript() + "//\n", true, false);
             }
             new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", "DELIMITER ;", true, false);
+            System.out.println("Migration of Stored Routines Scripts Completed...");
         }
 
         if (Util.getPropertyValue("CreateTriggers").equals("YES")) {
-            System.out.println("Generating Trigger Scripts");
+            System.out.println("-\nMigrating Trigger Scripts...");
             new Logger(Util.getPropertyValue("DDLPath") + "/Triggers.sql", "DELIMITER //", true, false);
             
             //Create Triggers
@@ -219,14 +217,20 @@ public class MySQLMain {
                 }
             }
             new Logger(Util.getPropertyValue("DDLPath") + "/Triggers.sql", "DELIMITER ;", true, false);
+            System.out.println("Migration of Trigger Scripts Completed...");
         }
     }
     
     //Migrate User Grants to MariaDB based on UserGrants property
     private void CreateUserGrants(DBConHandler TargetCon, DatabaseHandler MyDB) {
+        if (DryRun) {
+            return;
+        }
         if (Util.getPropertyValue("UserGrants").equals("YES")) {
+            System.out.println("-\nExecuting User Grants...");
             //Grants for the User Accounts
             Util.ExecuteScript(TargetCon, MyDB.getUserGrantsScript());
+            System.out.println("Execution of User Grants Completed...");
         } else {
             System.out.println("\nSkip User Grants");
         }

@@ -23,7 +23,7 @@ public class MySQLExodusSingle {
 		TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
 		//Dry Run or normal Migration
-		if (Util.getPropertyValue("DryRun").equals("NO")) {
+		if (Util.getPropertyValue("DryRun").equals("NO") && Util.getPropertyValue("MigrateData").equals("YES")) {
 			MigrationTask = "MIGRATE";
 		} else {
 			MigrationTask = "SKIP";
