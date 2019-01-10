@@ -326,7 +326,8 @@ public class MySQLTable implements TableHandler {
 
 				//One Trigger row per Trigger name
 				if (TriggerScriptRs.next()) {
-					TriggerScript = TriggerScriptRs.getString(3).replace("CREATE", "CREATE OR REPLACE");
+					TriggerScript = TriggerScriptRs.getString(3).replace("CREATE ", "CREATE OR REPLACE ");
+					MyTriggers.add("USE " + oResultSet.getString("TRIGGER_SCHEMA"));
 					MyTriggers.add(TriggerScript);
 				}
 				

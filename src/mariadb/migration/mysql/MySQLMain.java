@@ -25,6 +25,7 @@ public class MySQLMain {
     }
 
     public void StartExodusSingle(DBConHandler SourceCon, DBConHandler TargetCon) {
+        //Read The Database
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
         System.out.println("\n\n-------------------------------------------------------");
         System.out.println("- Parsing Completed, Starting Single Threaded Process -");
@@ -35,7 +36,9 @@ public class MySQLMain {
                 if (!PreMigrationSetup(TargetCon, MyDB, oSchema)) {
                     return;
                 }
-
+                //Switch to the respective Schema
+                TargetCon.SetCurrentSchema(oSchema.getSchemaName());
+                
                 for (TableHandler Tab : oSchema.getTables()) {
                     if (!Tab.getMigrationSkipped()) {
                         MySQLExodusSingle SingleTable = new MySQLExodusSingle(Tab);
@@ -80,6 +83,8 @@ public class MySQLMain {
                 if (!PreMigrationSetup(TargetCon, MyDB, oSchema)) {
                     return;
                 }
+                //Switch to the respective Schema
+                TargetCon.SetCurrentSchema(oSchema.getSchemaName());
 
                 for (TableHandler Tab : oSchema.getTables()) {
                     try {
@@ -176,6 +181,8 @@ public class MySQLMain {
         if (DryRun) {
             return;
         }
+        //Set Current Schema to ensure the objects are being created in the correct schema and not `mysql`
+        TargetCon.SetCurrentSchema(oSchema.getSchemaName());
 
         if (Util.getPropertyValue("CreateViews").equals("YES")) {
             System.out.println("-\nMigrating Views...");
@@ -189,9 +196,6 @@ public class MySQLMain {
         }
 
         //Create Triggers/PLSQL
-        /*
-            mysqldump --routines --no-create-info --no-data --no-create-db --skip-opt mydb > sourcecode.sql
-        */
         if (Util.getPropertyValue("CreatePLSQL").equals("YES")) {
             System.out.println("-\nMigrating Stored Routines Scripts...");
             new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", "DELIMITER //", true, false);

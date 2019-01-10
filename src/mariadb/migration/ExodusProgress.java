@@ -171,8 +171,8 @@ public class ExodusProgress {
 		} finally {
 			try {
 				StatementObj.close();
-			} catch (SQLException e) {
-				//Just Chill!
+			} catch (Exception e) {
+				//Do Nothing
 			}
 			TargetCon.DisconnectDB();			
 		}

@@ -44,7 +44,6 @@ public class MySQLConnect implements DBConHandler {
         try {
             dbConnection = DriverManager.getConnection(dbUrl, dbUserName, dbPassword);
             dbConnection.setAutoCommit(false);
-            //System.out.println("Successfully connected to : " + dbUrl);
         } catch (SQLException e) {
             System.out.println("****** ERROR ******");
             System.out.println("Unable to connect to : " + ConnectionName + " -> " + dbUrl);
@@ -57,12 +56,22 @@ public class MySQLConnect implements DBConHandler {
     public void DisconnectDB() {
         try {
             dbConnection.close();
-            //System.out.println("*** Connection Closed ***");
         } catch (SQLException e) {
             System.out.println("****** ERROR ******");
             System.out.println("Unable to Disconnect from : " + ConnectionName + " -> " + dbUrl);
             e.printStackTrace();
             System.out.println("- END -");
+        }
+    }
+
+    //Switch To a different Schema
+    public void SetCurrentSchema(String SchemaName) {
+        try {
+            dbConnection.setCatalog(SchemaName);
+        } catch (SQLException e) {
+            System.out.println("****** ERROR ******");
+            System.out.println("Unable to Switch to DB : " + SchemaName + " -> " + dbUrl);
+            e.printStackTrace();
         }
     }
 }

@@ -1,6 +1,6 @@
 {
     // Controls the line height. Use 0 to compute the lineHeight from the fontSize.
-    "editor.lineHeight": 24,
+    "editor.lineHeight": 23,
     // Enables font ligatures
     "editor.fontLigatures": true,
     // Controls if file decorations should use badges.
