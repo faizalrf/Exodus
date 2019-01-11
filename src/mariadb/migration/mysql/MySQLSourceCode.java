@@ -8,7 +8,7 @@ import java.sql.Statement;
 import mariadb.migration.SourceCodeHandler;
 
 public class MySQLSourceCode implements SourceCodeHandler {
-	private String SchemaName, ObjectName, ObjectType, SourceCodeScript, FullObjectName;
+	private String SchemaName, ObjectName, ObjectType, SourceCodeScript, SqlMode, FullObjectName;
 	private Connection oCon;
 
 	public MySQLSourceCode(Connection iCon, String iSchemaName, String iObjectName, String iObjectType) {
@@ -32,6 +32,7 @@ public class MySQLSourceCode implements SourceCodeHandler {
 			oResultSet = oStatement.executeQuery(ScriptSQL);
 			if (oResultSet.next()) {
 				//Read and append schema name before the Procedure/Function name, can be enclosed between `` or ""
+				SqlMode="SET SQL_MODE = '" + oResultSet.getString(2) + "'";
 				SourceCodeScript = oResultSet.getString(3).replace("CREATE ", "CREATE OR REPLACE ").replace(" `"
 										+ObjectName+"`", " `" + SchemaName + "`." + "`"+ObjectName+"`" ).replace(" \""
 										+ObjectName+"\"", " \"" + SchemaName + "\"." + "\""+ObjectName+"\"" );
@@ -50,6 +51,10 @@ public class MySQLSourceCode implements SourceCodeHandler {
 
     public String getSourceScript() {
         return SourceCodeScript;
+    }
+
+	public String getSQLMode() {
+        return SqlMode;
     }
 
     public String getSourceType() {

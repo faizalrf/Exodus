@@ -33,9 +33,6 @@ public class ExodusWorker {
 		//Identify if the Table has already been partially Migrated or not!
 		DeltaProcessing = ExodusProgress.hasTablePartiallyMigrated(Table.getSchemaName(), Table.getTableName());
 
-		//Execute Additional Pre-Load Scripts
-		Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PreLoadStatements"));
-
 		//This decides how the output will be logged on Screen
 		//MultiThreaded = (Integer.valueOf(Util.getPropertyValue("ThreadCount")) > 1);
 	}

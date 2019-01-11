@@ -14,10 +14,24 @@ public class MySQLMain {
         MySQLConnect SourceCon = new MySQLConnect(Util.getPropertyValue("SourceDB"));
         MariaDBConnect TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
+        if (!DryRun) {
+            //Execute These Additional Pre-Load Scripts at the begining of the session
+            MariaDBConnect TmpTargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+            Util.ExecuteScript(TmpTargetCon, Util.GetExtraStatements("MySQL.PreLoadStatements"));
+            TmpTargetCon.DisconnectDB();
+        }
+
         if (Integer.valueOf(Util.getPropertyValue("ThreadCount")) <= 1) {
             StartExodusSingle(SourceCon, TargetCon);
         } else {
             StartExodusMulti(SourceCon, TargetCon);
+        }
+
+        if (!DryRun) {
+            //Execute Additional Post-Migration Scripts at the end of Migration
+            MariaDBConnect TmpTargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
+            Util.ExecuteScript(TmpTargetCon, Util.GetExtraStatements("MySQL.PostLoadStatements"));
+            TmpTargetCon.DisconnectDB();
         }
 
         System.out.println("\n\n");
@@ -55,9 +69,6 @@ public class MySQLMain {
             new Logger(LogPath + "/Exodus.err", "Error While Processing - " + e.getMessage(), true);
             e.printStackTrace();
         } finally {
-            //Execute Additional Post-Migration Scripts at the end of Migration
-            Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PostLoadStatements"));
-
             SourceCon.DisconnectDB();
             TargetCon.DisconnectDB();
         }
@@ -122,10 +133,7 @@ public class MySQLMain {
         } catch (Exception e) {
             System.out.println("\nError: " + e.getMessage());
             e.printStackTrace();
-        } finally {
-            //Execute Additional Post-Migration Scripts at the end of Migration
-            Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MySQL.PostLoadStatements"));
-            
+        } finally {            
             //Cleanup Table Structure Creation Threads
             HouseKeepThreads(ThreadWorker);
             
@@ -202,8 +210,9 @@ public class MySQLMain {
             
             //Create Stored Procedures / Functions
             for (SourceCodeHandler Source : oSchema.getSourceCodeList()) {
+                Util.ExecuteScript(TargetCon, Source.getSQLMode());
                 Util.ExecuteScript(TargetCon, Source.getSourceScript());
-                new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSourceScript() + "//\n", true, false);
+                new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSQLMode() + "\n" + Source.getSourceScript() + "//\n", true, false);
             }
             new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", "DELIMITER ;", true, false);
             System.out.println("Migration of Stored Routines Scripts Completed...");
