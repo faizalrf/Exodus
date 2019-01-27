@@ -113,6 +113,7 @@ public class MySQLTable implements TableHandler {
 				TableScript = TableScript.replace("GENERATED ALWAYS AS", "AS");
 				TableScript = TableScript.replace("VIRTUAL NULL", "VIRTUAL");
 				TableScript = TableScript.replace("STORED NOT NULL", "PERSISTENT");
+				TableScript = TableScript.replace(" DEFAULT '0000-00-00 00:00:00'", " DEFAULT CURRENT_TIMESTAMP()");
 				//System.out.println(TableScript);
 			}
 			
@@ -135,12 +136,15 @@ public class MySQLTable implements TableHandler {
 	
 		System.out.print(Util.rPad("Parsing Table Structure " + FullTableName, 80, " ") + "--> ");
 		for (ColumnHandler Col : MyCol.getColumnList()) {
-			ColumnName = Col.getName();
+			ColumnName = "`" + Col.getName() + "`";
 
+			//Added support for TimeStamp and DateTime fields
 			if (Col.getDataType().toUpperCase().equals("DATETIME") && Col.getNulls().toUpperCase().contains("NOT")) {
-				ColumnExpression = "COALESCE(A." + Col.getName() + ", '0000-00-00 00:00:00') AS " + Col.getName();
+				ColumnExpression = "COALESCE(A.`" + Col.getName() + "`, '0000-00-00 00:00:00') AS `" + Col.getName() + "`";
+			} else if (Col.getDataType().toUpperCase().equals("TIMESTAMP") && Col.getNulls().toUpperCase().contains("NOT")) {
+				ColumnExpression = "COALESCE(A.`" + Col.getName() + "`, '0000-00-00 00:00:00') AS `" + Col.getName() + "`";
 			} else {
-				ColumnExpression = "A." + Col.getName();
+				ColumnExpression = "A.`" + Col.getName() + "`";
 			}
 			SelectColumnList += ColumnExpression + ",";
 			RawColumnList += ColumnName + ",";
@@ -326,7 +330,8 @@ public class MySQLTable implements TableHandler {
 
 				//One Trigger row per Trigger name
 				if (TriggerScriptRs.next()) {
-					TriggerScript = TriggerScriptRs.getString(3).replace("CREATE ", "CREATE OR REPLACE ");
+					TriggerScript = TriggerScriptRs.getString(3);
+					//Remove CREATE OR REPALCE replacement
 					MyTriggers.add("SET SQL_MODE = '" + TriggerScriptRs.getString(2) + "'");
 					MyTriggers.add(TriggerScript);
 				}

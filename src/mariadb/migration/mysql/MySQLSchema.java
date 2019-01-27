@@ -73,15 +73,15 @@ public class MySQLSchema implements SchemaHandler {
     }
     
     public void setTables() {
-        String ConstraintSQL;
+        String TablesSQL;
         Statement oStatement;
         ResultSet oResultSet;
-        ConstraintSQL = "SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES " +
+        TablesSQL = "SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES " +
         				"WHERE TABLE_SCHEMA='" + SchemaName + "' AND TABLE_TYPE IN ('BASE TABLE', 'VIEW')";
 
         try {
         	oStatement = SourceCon.createStatement();
-        	oResultSet = oStatement.executeQuery(ConstraintSQL);
+        	oResultSet = oStatement.executeQuery(TablesSQL);
             
             while (oResultSet.next()) {
                 //If the object is a VIEW add to View's List, else to Table's List

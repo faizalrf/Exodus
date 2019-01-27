@@ -59,7 +59,6 @@ public class ExodusWorker {
 		byte[] BlobObj;
 		double DoubleValue;
 		BigDecimal BigDecimalValue;
-		long LongValue;
 		float FloatValue;
 		
 		if (MigrationTask.equals("SKIP")) {
@@ -72,10 +71,11 @@ public class ExodusWorker {
 		ResultSet SourceResultSetObj;
 		Statement SourceStatementObj;
 
-		//Create the Remote Table for Delta Processing
-		for (String DeltaTabScript : Table.getDeltaTableScript()) {
-			Util.ExecuteScript(SourceCon, DeltaTabScript);
-		}
+		//Remote Tables Not needed hence Disabling this block
+		////Create the Remote Table for Delta Processing
+		//for (String DeltaTabScript : Table.getDeltaTableScript()) {
+		//	Util.ExecuteScript(SourceCon, DeltaTabScript);
+		//}
 
 		//Check for Delta conditions and actions
 		TotalRecords = Table.getRecordCount();
@@ -93,7 +93,7 @@ public class ExodusWorker {
 			}
 			new Logger(Util.getPropertyValue("DDLPath") + "/" + Table.getFullTableName() + ".sql", Table.getTableScript() + ";", false, false);
 		}
-			    	    
+
 		//See if first records will be able to fit a single BATCH, IF Total Record Count is ZERO, SET BATCH SIZE to 1
 		//THIS IS TO AVOID DIVIDE BY ZERO errors
 	    if (BATCH_SIZE > TotalRecords) {
@@ -124,7 +124,20 @@ public class ExodusWorker {
 			//EndDT = LocalTime.now();
 			RecordsPerSecond = BATCH_SIZE;
 
-	        while (SourceResultSetObj.next()) {
+			/*
+				BigInteger bi = new BigInteger("18446744073709551615"); // max unsigned 64-bit number 
+				statement.setObject(1, bi, Types.BIGINT);
+				statement.execute();
+				while reading result set : if facebok_id is of type BigInteger
+
+				value.setFacebook_id(BigInteger.valueOf(rs.getLong("facebook_id")));
+			*/
+
+			//Pre Batch Execution Scripts from the Property File if any
+            Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
+			
+			//Process the Batch
+			while (SourceResultSetObj.next()) {
 				try {
 			        for (int Col = 1; Col <= ColumnCount; Col++) {
 			            ColumnType = SourceResultSetMeta.getColumnTypeName(Col);
@@ -139,11 +152,12 @@ public class ExodusWorker {
 			                    	PreparedStmt.setInt(Col, IntValue);
 			                    break;
 							case "TINYCLOB":
-							case "CLOB": 
+							case "CLOB":
 							case "MEDIUMCLOB":
 							case "LONGCLOB":
+							case "CHAR": 
 							case "VARCHAR":
-			                case "CHAR": PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
+								PreparedStmt.setString(Col, SourceResultSetObj.getString(Col));
 			                    break;
 							case "DATETIME": 
 							case "TIMESTAMP": PreparedStmt.setTimestamp(Col, SourceResultSetObj.getTimestamp(Col)); 
@@ -153,7 +167,8 @@ public class ExodusWorker {
 			                case "TIME": PreparedStmt.setTime(Col, SourceResultSetObj.getTime(Col));
 			                    break;
 			                case "BOOL": 
-			                case "BOOLEAN": 
+							case "BOOLEAN": 
+							case "BIT":
 			                case "TINYINT": 
 			                case "TINYINT UNSIGNED": 
 			                    IntValue = SourceResultSetObj.getInt(Col);
@@ -172,11 +187,12 @@ public class ExodusWorker {
 			                    break;
 			                case "BIGINT": 
 			                case "BIGINT UNSIGNED": 
-			                    LongValue = SourceResultSetObj.getLong(Col);
+								BigDecimalValue = SourceResultSetObj.getBigDecimal(Col);
+								
 			                    if(SourceResultSetObj.wasNull())
 			                    	PreparedStmt.setNull(Col, java.sql.Types.BIGINT);
 			                    else
-			                    	PreparedStmt.setLong(Col, LongValue);
+									PreparedStmt.setBigDecimal(Col, BigDecimalValue);
 			                    break;                                
 			                case "DOUBLE":
 			                	DoubleValue = SourceResultSetObj.getDouble(Col);
@@ -272,7 +288,7 @@ public class ExodusWorker {
 						}
 
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
-						if (BatchCounter % 10 == 0) {
+						if (BatchCounter % 5 == 0) {
 							//Seconds Taken from Start to Now!
 							SecondsTaken = ChronoUnit.SECONDS.between(StartDT, LocalTime.now());
 							if (SecondsTaken == 0) {
@@ -313,13 +329,15 @@ public class ExodusWorker {
 					BATCH_SIZE = 1;
 				}
 			}
+			//Execute any Post Batch Scripts on the Current Connection
+			Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
 
 			//Final Output
 			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
 			
 			System.out.println("\r" + OutString);
 			TableLog.WriteLog(OutString);
-	        
+			
 			//Close Statements and ResultSet
 	        SourceResultSetObj.close();
         	SourceStatementObj.close();

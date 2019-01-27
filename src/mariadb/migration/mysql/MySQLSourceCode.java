@@ -33,7 +33,7 @@ public class MySQLSourceCode implements SourceCodeHandler {
 			if (oResultSet.next()) {
 				//Read and append schema name before the Procedure/Function name, can be enclosed between `` or ""
 				SqlMode="SET SQL_MODE = '" + oResultSet.getString(2) + "'";
-				SourceCodeScript = oResultSet.getString(3).replace("CREATE ", "CREATE OR REPLACE ").replace(" `"
+				SourceCodeScript = oResultSet.getString(3).replace(" `"
 										+ObjectName+"`", " `" + SchemaName + "`." + "`"+ObjectName+"`" ).replace(" \""
 										+ObjectName+"\"", " \"" + SchemaName + "\"." + "\""+ObjectName+"\"" );
 			}

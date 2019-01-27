@@ -12,14 +12,16 @@ public class MySQLMain {
     public MySQLMain() {
         MigrationErrors = false;
         MySQLConnect SourceCon = new MySQLConnect(Util.getPropertyValue("SourceDB"));
-        MariaDBConnect TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
         if (!DryRun) {
             //Execute These Additional Pre-Load Scripts at the begining of the session
             MariaDBConnect TmpTargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
-            Util.ExecuteScript(TmpTargetCon, Util.GetExtraStatements("MySQL.PreLoadStatements"));
+            Util.ExecuteScript(TmpTargetCon, Util.GetExtraStatements("MariaDB.PreLoadStatements"));
+            Util.ExecuteScript(TmpTargetCon, SourceCon.getSQLMode());
             TmpTargetCon.DisconnectDB();
         }
+
+        MariaDBConnect TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
         if (Integer.valueOf(Util.getPropertyValue("ThreadCount")) <= 1) {
             StartExodusSingle(SourceCon, TargetCon);
@@ -30,7 +32,8 @@ public class MySQLMain {
         if (!DryRun) {
             //Execute Additional Post-Migration Scripts at the end of Migration
             MariaDBConnect TmpTargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
-            Util.ExecuteScript(TmpTargetCon, Util.GetExtraStatements("MySQL.PostLoadStatements"));
+            Util.ExecuteScript(TmpTargetCon, Util.GetExtraStatements("MariaDB.PostLoadStatements"));
+            Util.ExecuteScript(TmpTargetCon, TargetCon.getSQLMode());
             TmpTargetCon.DisconnectDB();
         }
 
@@ -44,6 +47,7 @@ public class MySQLMain {
         System.out.println("\n\n-------------------------------------------------------");
         System.out.println("- Parsing Completed, Starting Single Threaded Process -");
         System.out.println("-------------------------------------------------------");
+
         try {
             for (SchemaHandler oSchema : MyDB.getSchemaList()) {
                 //This Function creates the Progress table, Database and User accounts if needed
@@ -61,7 +65,7 @@ public class MySQLMain {
                 }
                 //Create PLSQL, Triggers, Views etc.
                 CreateOtherObjects(oSchema, TargetCon);
-            }            
+            }
             //Create User Grants after all the Tables/Views and PLSQL have been created
             CreateUserGrants(TargetCon, MyDB);
         } catch (Exception e) {

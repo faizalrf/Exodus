@@ -2,16 +2,16 @@
 <DataSources>
 	<DataProvider type="MySQL">
 		<UserName>migration</UserName>
-		<Password>!QAZ2wsx3edc</Password>
-		<HostName>192.168.56.158</HostName>
+		<Password>malt3se1</Password>
+		<HostName>192.168.56.160</HostName>
 		<PortNumber>3306</PortNumber>
 		<DatabaseName>mysql</DatabaseName>
 	</DataProvider>
 	<DataProvider type="MariaDB">
 		<UserName>migration</UserName>
 		<Password>password</Password>
-		<HostName>192.168.56.80</HostName>
-		<PortNumber>4006</PortNumber>
+		<HostName>192.168.56.71</HostName>
+		<PortNumber>3306</PortNumber>
 		<DatabaseName>mysql</DatabaseName>
 	</DataProvider>
 </DataSources>

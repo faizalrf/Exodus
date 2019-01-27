@@ -2,7 +2,9 @@ package mariadb.migration.mysql;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import mariadb.migration.DBConHandler;
 import mariadb.migration.DBCredentialsReader;
@@ -14,6 +16,7 @@ public class MySQLConnect implements DBConHandler {
     private String dbPassword;
     private String dbUrl;
     private String ConnectionName;
+    private String SQLMode;
     private DBCredentialsReader UCR;
     private DataSources UC;
     private Connection dbConnection = null;
@@ -44,6 +47,7 @@ public class MySQLConnect implements DBConHandler {
         try {
             dbConnection = DriverManager.getConnection(dbUrl, dbUserName, dbPassword);
             dbConnection.setAutoCommit(false);
+            setSQLMode();
         } catch (SQLException e) {
             System.out.println("****** ERROR ******");
             System.out.println("Unable to connect to : " + ConnectionName + " -> " + dbUrl);
@@ -73,5 +77,31 @@ public class MySQLConnect implements DBConHandler {
             System.out.println("Unable to Switch to DB : " + SchemaName + " -> " + dbUrl);
             e.printStackTrace();
         }
+    }
+
+    public void setSQLMode() {
+        String ScriptSQL;
+        Statement oStatement;
+        ResultSet oResultSet;
+
+        ScriptSQL = "SHOW GLOBAL VARIABLES LIKE 'SQL_MODE'";
+        SQLMode = "";
+        
+        try {
+        	oStatement = dbConnection.createStatement();
+        	oResultSet = oStatement.executeQuery(ScriptSQL);
+            
+            if (oResultSet.next()) {
+                SQLMode = "SET GLOBAL SQL_MODE = '" + oResultSet.getString(2) + "'";
+            }
+            oStatement.close();
+            oResultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public String getSQLMode() {
+        return SQLMode;
     }
 }
