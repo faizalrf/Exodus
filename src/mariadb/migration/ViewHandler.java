@@ -1,5 +1,8 @@
 package mariadb.migration;
+
+import java.util.List;
+
 public interface ViewHandler {
     void setViewScript();
-    String getViewScript();
+    List<String> getViewScript();
 }

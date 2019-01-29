@@ -47,19 +47,7 @@ public class Util {
     	return ReturnStatus;
     }
 
-	public static List<String> GetExtraStatements(String Key) {
-		List<String> Scripts = new ArrayList<String>();
-		String Statement;
-		int Counter=0;
-
-		Statement = Util.getPropertyValue(Key + "." + (++Counter));
-		while(!Statement.isEmpty()) {
-			Scripts.add(Statement);
-			Statement = Util.getPropertyValue(Key + "." + (++Counter));
-		}
-		return Scripts;
-	}
-
+	/*
 	public static long ExecuteScript(DBConHandler TargetCon, List<String> SQLScript) {
     	long ReturnStatus = 0;
 		Statement StatementObj;
@@ -80,6 +68,48 @@ public class Util {
 		}
     	return ReturnStatus;
 	}
+	*/
+
+	public static long ExecuteScript(DBConHandler TargetCon, List<String> SQLScript) {
+    	long ReturnStatus = 0;
+		Statement StatementObj;
+
+		try {
+			StatementObj = TargetCon.getDBConnection().createStatement();
+
+			//Change this code to execute each script as individual instead of a batch
+			for (String SQL : SQLScript) {
+				//StatementObj.addBatch(SQL);
+				try {
+					StatementObj.execute(SQL);
+				} catch (SQLException ex) {
+					System.out.println("*** Failed to Execute: " + SQL);
+				}
+			}
+			//StatementObj.executeBatch();
+			TargetCon.getDBConnection().commit();
+			StatementObj.close();
+		} catch (Exception e) {
+			System.out.println("*** Failed to Execute: " + SQLScript);
+			e.printStackTrace();
+			ReturnStatus = -1;
+		}
+    	return ReturnStatus;
+	}
+
+	public static List<String> GetExtraStatements(String Key) {
+		List<String> Scripts = new ArrayList<String>();
+		String Statement;
+		int Counter=0;
+
+		Statement = Util.getPropertyValue(Key + "." + (++Counter));
+		while(!Statement.isEmpty()) {
+			Scripts.add(Statement);
+			Statement = Util.getPropertyValue(Key + "." + (++Counter));
+		}
+		return Scripts;
+	}
+
 	public static String TimeToString(long lSeconds) {
 		String SecondsRemaining="";
 		long Hours, Minutes, Seconds;

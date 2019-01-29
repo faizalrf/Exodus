@@ -4,18 +4,21 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import mariadb.migration.ViewHandler;
 
 public class MySQLView implements ViewHandler {
-	private String SchemaName, ViewName, ViewScript, FullViewName;
+	private String SchemaName, ViewName, FullViewName;
+	private List<String> ViewScript = new ArrayList<String>();
 	private Connection oCon;
 
 	public MySQLView(Connection iCon, String iSchemaName, String iViewName) {
 		oCon = iCon;
 		SchemaName = iSchemaName;
         ViewName = iViewName;
-        FullViewName = SchemaName + "." + ViewName;
+        FullViewName = "`" + SchemaName + "`.`" + ViewName + "`";
         setViewScript();
 	}
     
@@ -32,9 +35,11 @@ public class MySQLView implements ViewHandler {
 			if (oResultSet.next()) {
 				//Add SchemaName before the object name, can be enclosed between `` or ""
 				//Remove CREATE OR REPALCE replacement
-				ViewScript = oResultSet.getString(2).replace(" `"+ViewName+"`", " `" 
+				//Changed the ViewScript to an Array List so that DROP statement can be added to the queue
+				ViewScript.add("DROP VIEW IF EXISTS " + FullViewName);
+				ViewScript.add(oResultSet.getString(2).replace(" `"+ViewName+"`", " `" 
 								+ SchemaName + "`." + "`"+ViewName+"`").replace(" \""+ViewName+"\"", " \"" 
-								+ SchemaName + "\"." + "\""+ViewName+"\"");
+								+ SchemaName + "\"." + "\""+ViewName+"\""));
 			}
 
 			oResultSet.close();
@@ -44,7 +49,7 @@ public class MySQLView implements ViewHandler {
 		}
     }
 
-    public String getViewScript() {
+    public List<String> getViewScript() {
         return ViewScript;
     }
 }

@@ -7,6 +7,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 public class ExodusWorker {
@@ -86,11 +87,19 @@ public class ExodusWorker {
 			SourceSelectSQL = Table.getTableSelectScript();
 			TableLog.WriteLog("Processing Started for - " + Table.getTableName() + " Total Records to Migrate " + Util.numberFormat.format(TotalRecords));
 
+			//Pre Batch Execution Scripts from the Property File if any
+			//In This case this sets the SQL_MODE so that tables from source with 0000-00-00 DATE/DATETIME/TIMESTAMP fields can be created
+			Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
+
 			//Try to create the target table and skip this entire process if any errors
 			if (Util.ExecuteScript(TargetCon, Table.getTableScript()) < 0) {
 				TableLog.WriteLog("Failed to create target table, Process aborted!");
 				return -1;
 			}
+
+			//Execute any Post Batch Scripts on the Current Connection
+			Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
+
 			new Logger(Util.getPropertyValue("DDLPath") + "/" + Table.getFullTableName() + ".sql", Table.getTableScript() + ";", false, false);
 		}
 
@@ -136,6 +145,9 @@ public class ExodusWorker {
 			//Pre Batch Execution Scripts from the Property File if any
             Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
 			
+			//Default Time Remaining is 1 Minute  
+			SecondsRemaining=60;
+
 			//Process the Batch
 			while (SourceResultSetObj.next()) {
 				try {
@@ -304,7 +316,7 @@ public class ExodusWorker {
 						}
 						ProgressPercent = ((float)CommitCount / (float)TotalRecords * 100f);
 
-						OutString = Util.rPad(LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> " + Util.lPad(Util.percentFormat.format(ProgressPercent) + "%", 7, " ") + " [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - ETA       [" + Util.TimeToString(SecondsRemaining) + "]";
+						OutString = Util.rPad(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> " + Util.lPad(Util.percentFormat.format(ProgressPercent) + "%", 7, " ") + " [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - ETA       [" + Util.TimeToString(SecondsRemaining) + "]";
 						System.out.print("\r" + OutString);
 						TableLog.WriteLog(OutString);
 			        }
@@ -333,7 +345,7 @@ public class ExodusWorker {
 			Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
 
 			//Final Output
-			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS) + "]";
+			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "]";
 			
 			System.out.println("\r" + OutString);
 			TableLog.WriteLog(OutString);

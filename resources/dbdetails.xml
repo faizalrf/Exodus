@@ -3,14 +3,14 @@
 	<DataProvider type="MySQL">
 		<UserName>migration</UserName>
 		<Password>malt3se1</Password>
-		<HostName>192.168.56.160</HostName>
+		<HostName>192.168.56.164</HostName>
 		<PortNumber>3306</PortNumber>
 		<DatabaseName>mysql</DatabaseName>
 	</DataProvider>
 	<DataProvider type="MariaDB">
 		<UserName>migration</UserName>
 		<Password>password</Password>
-		<HostName>192.168.56.71</HostName>
+		<HostName>192.168.56.59</HostName>
 		<PortNumber>3306</PortNumber>
 		<DatabaseName>mysql</DatabaseName>
 	</DataProvider>

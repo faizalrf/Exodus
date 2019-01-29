@@ -192,7 +192,7 @@ public class ExodusProgress {
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
 			TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
-			String sqlStatement = "SELECT Count(*) as MigrationCount, (CASE WHEN Sum(TotalRecords) = 0 THEN -1 ELSE Sum(TotalRecords) - Sum(RecordsLoaded) END) AS Migrated FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
+			String sqlStatement = "SELECT Count(*) as MigrationCount, (CASE WHEN Sum(TotalRecords) = 0 AND Max(EndTime) IS NULL THEN -1 ELSE Sum(TotalRecords) - Sum(RecordsLoaded) END) AS Migrated FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
 			try {
 				StatementObj = TargetCon.getDBConnection().createStatement();
 				ResultSetObj = StatementObj.executeQuery(sqlStatement);

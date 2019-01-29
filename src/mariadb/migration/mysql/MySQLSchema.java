@@ -45,7 +45,7 @@ public class MySQLSchema implements SchemaHandler {
             
             if (oResultSet.next()) {
                 SchemaScript = oResultSet.getString(2);
-                SchemaScript = SchemaScript.replace("CREATE DATABASE", "CREATE DATABASE IF NOT EXISTS");
+                SchemaScript = SchemaScript.replace("CREATE DATABASE ", "CREATE DATABASE IF NOT EXISTS ");
 
             	//Read the Tables List for the Current Schema, this will also handle VIEWS in the schema.
             	setTables();
@@ -101,15 +101,15 @@ public class MySQLSchema implements SchemaHandler {
 public void setSequencesList() { /* No Sequences in MySQL */ }
 
     public void setSourceCodeList() {
-        String ConstraintSQL;
+        String SourceSQL;
         Statement oStatement;
         ResultSet oResultSet;
-        ConstraintSQL = "SELECT ROUTINE_NAME, ROUTINE_TYPE FROM INFORMATION_SCHEMA.ROUTINES " +
+        SourceSQL = "SELECT ROUTINE_NAME, ROUTINE_TYPE FROM INFORMATION_SCHEMA.ROUTINES " +
         				"WHERE ROUTINE_SCHEMA='" + SchemaName + "' AND ROUTINE_TYPE IN ('PROCEDURE', 'FUNCTION')";
 
         try {
         	oStatement = SourceCon.createStatement();
-        	oResultSet = oStatement.executeQuery(ConstraintSQL);
+        	oResultSet = oStatement.executeQuery(SourceSQL);
             
             while (oResultSet.next()) {
                 //ROUTINE_TYPE is either PROCEDURE or FUNCTION!

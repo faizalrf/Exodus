@@ -45,6 +45,13 @@ public class MySQLMain {
         //Read The Database
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
         System.out.println("\n\n-------------------------------------------------------");
+        
+        if (DryRun) {
+            System.out.println("- Dry Run, Skipping Actual Migration Steps -");
+            System.out.println("-------------------------------------------------------");
+            return;
+        }
+
         System.out.println("- Parsing Completed, Starting Single Threaded Process -");
         System.out.println("-------------------------------------------------------");
 
@@ -57,6 +64,10 @@ public class MySQLMain {
                 //Switch to the respective Schema
                 TargetCon.SetCurrentSchema(oSchema.getSchemaName());
                 
+                System.out.println("\n-------------------------------------------------------");
+                System.out.println("- Starting `" + oSchema.getSchemaName() + "` Migration");
+                System.out.println("-------------------------------------------------------");
+
                 for (TableHandler Tab : oSchema.getTables()) {
                     if (!Tab.getMigrationSkipped()) {
                         MySQLExodusSingle SingleTable = new MySQLExodusSingle(Tab);
@@ -80,7 +91,15 @@ public class MySQLMain {
 
     public void StartExodusMulti(DBConHandler SourceCon, DBConHandler TargetCon) {
         MySQLDatabase MyDB = new MySQLDatabase(SourceCon.getDBConnection());
+
         System.out.println("\n\n-------------------------------------------------------");
+
+        if (DryRun) {
+            System.out.println("- Dry Run, Skipping Actual Migration Steps -");
+            System.out.println("-------------------------------------------------------");
+            return;
+        }
+
         System.out.println("- Parsing Completed, Starting Multi Threaded Process -");
         System.out.println("------------------------------------------------------");
 
@@ -100,6 +119,10 @@ public class MySQLMain {
                 }
                 //Switch to the respective Schema
                 TargetCon.SetCurrentSchema(oSchema.getSchemaName());
+
+                System.out.println("\n-------------------------------------------------------");
+                System.out.println("- Starting `" + oSchema.getSchemaName() + "` Migration");
+                System.out.println("-------------------------------------------------------");
 
                 for (TableHandler Tab : oSchema.getTables()) {
                     try {

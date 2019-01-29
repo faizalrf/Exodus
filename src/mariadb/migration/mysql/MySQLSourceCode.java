@@ -4,11 +4,15 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import mariadb.migration.SourceCodeHandler;
 
 public class MySQLSourceCode implements SourceCodeHandler {
-	private String SchemaName, ObjectName, ObjectType, SourceCodeScript, SqlMode, FullObjectName;
+	private String SchemaName, ObjectName, ObjectType, SqlMode, FullObjectName;
+	private List<String> SourceCodeScript = new ArrayList<String>();
+
 	private Connection oCon;
 
 	public MySQLSourceCode(Connection iCon, String iSchemaName, String iObjectName, String iObjectType) {
@@ -16,7 +20,7 @@ public class MySQLSourceCode implements SourceCodeHandler {
 		SchemaName = iSchemaName;
         ObjectName = iObjectName;
         ObjectType = iObjectType;
-        FullObjectName = SchemaName + "." + ObjectName;
+        FullObjectName = "`" + SchemaName + "`.`" + ObjectName + "`";
         setSourceScript();
 	}
 
@@ -33,9 +37,10 @@ public class MySQLSourceCode implements SourceCodeHandler {
 			if (oResultSet.next()) {
 				//Read and append schema name before the Procedure/Function name, can be enclosed between `` or ""
 				SqlMode="SET SQL_MODE = '" + oResultSet.getString(2) + "'";
-				SourceCodeScript = oResultSet.getString(3).replace(" `"
+				SourceCodeScript.add("DROP " + ObjectType + " IF EXISTS " + FullObjectName);
+				SourceCodeScript.add(oResultSet.getString(3).replace(" `"
 										+ObjectName+"`", " `" + SchemaName + "`." + "`"+ObjectName+"`" ).replace(" \""
-										+ObjectName+"\"", " \"" + SchemaName + "\"." + "\""+ObjectName+"\"" );
+										+ObjectName+"\"", " \"" + SchemaName + "\"." + "\""+ObjectName+"\"" ));
 			}
 
 			oResultSet.close();
@@ -49,7 +54,7 @@ public class MySQLSourceCode implements SourceCodeHandler {
         ObjectType = iObjectType;
     }
 
-    public String getSourceScript() {
+    public List<String> getSourceScript() {
         return SourceCodeScript;
     }
 

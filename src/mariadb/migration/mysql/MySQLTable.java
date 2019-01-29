@@ -34,14 +34,15 @@ public class MySQLTable implements TableHandler {
 		oCon = iCon;
 		SchemaName = iSchemaName;
 		TableName = iTableName;
-		FullTableName = SchemaName + "." + TableName;
+		FullTableName = "`" + SchemaName + "`.`" + TableName + "`";
 		DeltaDBName = "ExodusDb";
 
 		//Becasue Schema is common, so delta table names should be prefixed with the Schema Names
 		FullDeltaTableName = DeltaDBName + "." + SchemaName.toLowerCase() + "_" + TableName.toLowerCase();
 		
-		AdditionalCriteria = Util.getPropertyValue(FullTableName + ".AdditionalCriteria");
-		WHERECriteria = Util.getPropertyValue(FullTableName + ".WHERECriteria");
+		//Split up the Full Table Name into Schena + Table because I have to add "`" to the Full Table Name Variable
+		AdditionalCriteria = Util.getPropertyValue(SchemaName + "." + TableName + ".AdditionalCriteria");
+		WHERECriteria = Util.getPropertyValue(SchemaName + "." + TableName + ".WHERECriteria");
 
 		if (WHERECriteria.isEmpty()) {
 			WHERECriteria = "1=1";
@@ -61,11 +62,12 @@ public class MySQLTable implements TableHandler {
 			setTableScript();
 			setRecordCount();
 			setColumnList();
-			setConstraints();
-			setPrimaryKeys();
-			setForeignKeys();
-			setCheckConstraints();
-			setIndexes();
+			//Commented the following as these are not reqired due to "SHOW CREATE" usage of MySQL
+			//setConstraints();
+			//setPrimaryKeys();
+			//setForeignKeys();
+			//setCheckConstraints();
+			//setIndexes();
 			setTriggers();
 		}
 	}
@@ -309,7 +311,7 @@ public class MySQLTable implements TableHandler {
 	}
 
 	public void setTriggers() {
-		String ScriptSQL, TriggerScriptSQL, TriggerScript = "";
+		String ScriptSQL, TriggerScriptSQL, TriggerScript = "", FullTriggerName;
 		Statement oStatement, TriggerScriptStmt;
 		ResultSet oResultSet, TriggerScriptRs;
 
@@ -322,9 +324,8 @@ public class MySQLTable implements TableHandler {
 
 			while (oResultSet.next()) {
 				TriggerScriptStmt = oCon.createStatement();
-				TriggerScriptSQL = "SHOW CREATE TRIGGER " + 
-									oResultSet.getString("TRIGGER_SCHEMA") + "." + 
-									oResultSet.getString("TRIGGER_NAME");
+				FullTriggerName = "`" + oResultSet.getString("TRIGGER_SCHEMA") + "`.`" + oResultSet.getString("TRIGGER_NAME") + "`";
+				TriggerScriptSQL = "SHOW CREATE TRIGGER " + FullTriggerName;
 				//New Trigger Code
 				TriggerScriptRs = TriggerScriptStmt.executeQuery(TriggerScriptSQL);
 
@@ -333,6 +334,7 @@ public class MySQLTable implements TableHandler {
 					TriggerScript = TriggerScriptRs.getString(3);
 					//Remove CREATE OR REPALCE replacement
 					MyTriggers.add("SET SQL_MODE = '" + TriggerScriptRs.getString(2) + "'");
+					MyTriggers.add("DROP TRIGGER IF EXISTS " + FullTriggerName);
 					MyTriggers.add(TriggerScript);
 				}
 				
