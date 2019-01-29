@@ -225,7 +225,9 @@ public class MySQLMain {
             //Create Views
             for (ViewHandler View : oSchema.getViewsList()) {
                 Util.ExecuteScript(TargetCon, View.getViewScript());
-                new Logger(Util.getPropertyValue("DDLPath") + "/Views.sql", View.getViewScript() + ";\n", true, false);
+                for (String SQL : View.getViewScript()) {
+                    new Logger(Util.getPropertyValue("DDLPath") + "/Views.sql", SQL + ";\n", true, false);
+                }
             }
             System.out.println("Migration of Views Completed...");
         }
@@ -239,7 +241,10 @@ public class MySQLMain {
             for (SourceCodeHandler Source : oSchema.getSourceCodeList()) {
                 Util.ExecuteScript(TargetCon, Source.getSQLMode());
                 Util.ExecuteScript(TargetCon, Source.getSourceScript());
-                new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSQLMode() + "\n" + Source.getSourceScript() + "//\n", true, false);
+                new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSQLMode() + "//\n", true, false);
+                for (String SQL : Source.getSourceScript()) {
+                    new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", SQL + "//\n", true, false);                    
+                }
             }
             new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", "DELIMITER ;", true, false);
             System.out.println("Migration of Stored Routines Scripts Completed...");
