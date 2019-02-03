@@ -38,6 +38,7 @@ public class MariaDBConnect implements DBConHandler {
     
     public Connection getDBConnection() { return dbConnection; }
 
+    //TODO implement methods to store and reset the SQL modes
 	public Connection ConnectDB() {
         try {
             dbConnection = DriverManager.getConnection(dbUrl, dbUserName, dbPassword);            
