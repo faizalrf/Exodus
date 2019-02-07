@@ -136,7 +136,6 @@ public class MySQLMain {
                                 //Remove the completed threads so that new tables can be added to the queue
                                 if (!ThreadWorker.get(CurrentThread).isThreadActive()) {
                                     ThreadWorker.remove(CurrentThread);
-                                    System.out.println("Thread Removed" + CurrentThread);
                                 }
                             }
                             //Rest for Half a second before checking the threads status again
