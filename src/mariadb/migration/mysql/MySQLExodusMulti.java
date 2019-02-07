@@ -60,7 +60,7 @@ public class MySQLExodusMulti implements Runnable {
     	MySQLWorkerThread.start();
 	}
 
-    public boolean isThreadActive() { 
+  public boolean isThreadActive() { 
 		return MySQLWorkerThread.isAlive(); 
 	}	
 }

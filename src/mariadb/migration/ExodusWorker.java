@@ -87,9 +87,10 @@ public class ExodusWorker {
 			SourceSelectSQL = Table.getTableSelectScript();
 			TableLog.WriteLog("Processing Started for - " + Table.getTableName() + " Total Records to Migrate " + Util.numberFormat.format(TotalRecords));
 
+			////Pre and Post Batch Insert statments have been removed and no longer needed
 			//Pre Batch Execution Scripts from the Property File if any
 			//In This case this sets the SQL_MODE so that tables from source with 0000-00-00 DATE/DATETIME/TIMESTAMP fields can be created
-			Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
+			//Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
 
 			//Try to create the target table and skip this entire process if any errors
 			if (Util.ExecuteScript(TargetCon, Table.getTableScript()) < 0) {
@@ -97,8 +98,9 @@ public class ExodusWorker {
 				return -1;
 			}
 
-			//Execute any Post Batch Scripts on the Current Connection
-			Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
+			////Pre and Post Batch Insert statments have been removed and no longer needed
+			//Execute any Post Batch Scripts on the Current Connectionf
+			//Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
 
 			new Logger(Util.getPropertyValue("DDLPath") + "/" + Table.getFullTableName() + ".sql", Table.getTableScript() + ";", false, false);
 		}
@@ -114,6 +116,8 @@ public class ExodusWorker {
 
 		TargetInsertSQL = Table.getTargetInsertScript();
 		
+		//First output for tables that take longer to open the resultset
+		System.out.print("Fetching Resultset for " + Table.getFullTableName() + "...");
 		try {
 			//Reverse Scrollable Resultset
 			SourceStatementObj = SourceCon.getDBConnection().createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
@@ -133,20 +137,12 @@ public class ExodusWorker {
 			//EndDT = LocalTime.now();
 			RecordsPerSecond = BATCH_SIZE;
 
-			/*
-				BigInteger bi = new BigInteger("18446744073709551615"); // max unsigned 64-bit number 
-				statement.setObject(1, bi, Types.BIGINT);
-				statement.execute();
-				while reading result set : if facebok_id is of type BigInteger
-
-				value.setFacebook_id(BigInteger.valueOf(rs.getLong("facebook_id")));
-			*/
-
+			////Pre and Post Batch Insert statments have been removed and no longer needed
 			//Pre Batch Execution Scripts from the Property File if any
-            Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
+            //Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
 			
-			//Default Time Remaining is 1 Minute  
-			SecondsRemaining=60;
+			//Default Time Remaining is 30 Minute  
+			SecondsRemaining=1800;
 
 			//Process the Batch
 			while (SourceResultSetObj.next()) {
@@ -300,7 +296,7 @@ public class ExodusWorker {
 						}
 
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
-						if (BatchCounter % 5 == 0) {
+						if (BatchCounter % 10 == 0) {
 							//Seconds Taken from Start to Now!
 							SecondsTaken = ChronoUnit.SECONDS.between(StartDT, LocalTime.now());
 							if (SecondsTaken == 0) {
@@ -341,8 +337,9 @@ public class ExodusWorker {
 					BATCH_SIZE = 1;
 				}
 			}
+			////Pre and Post Batch Insert statments have been removed and no longer needed
 			//Execute any Post Batch Scripts on the Current Connection
-			Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
+			//Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
 
 			//Final Output
 			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "]";

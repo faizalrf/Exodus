@@ -136,6 +136,7 @@ public class MySQLMain {
                                 //Remove the completed threads so that new tables can be added to the queue
                                 if (!ThreadWorker.get(CurrentThread).isThreadActive()) {
                                     ThreadWorker.remove(CurrentThread);
+                                    System.out.println("Thread Removed" + CurrentThread);
                                 }
                             }
                             //Rest for Half a second before checking the threads status again
@@ -152,6 +153,9 @@ public class MySQLMain {
                         e.printStackTrace();
                     }
                 }
+                //Cleanup Table Structure Creation Threads
+                HouseKeepThreads(ThreadWorker);
+
                 //Create PLSQL, Triggers, Views etc.
                 CreateOtherObjects(oSchema, TargetCon);
             }
@@ -160,10 +164,7 @@ public class MySQLMain {
         } catch (Exception e) {
             System.out.println("\nError: " + e.getMessage());
             e.printStackTrace();
-        } finally {            
-            //Cleanup Table Structure Creation Threads
-            HouseKeepThreads(ThreadWorker);
-            
+        } finally {                        
             //Disconnect from Databases
             SourceCon.DisconnectDB();
             TargetCon.DisconnectDB();            
@@ -239,9 +240,9 @@ public class MySQLMain {
             
             //Create Stored Procedures / Functions
             for (SourceCodeHandler Source : oSchema.getSourceCodeList()) {
-                Util.ExecuteScript(TargetCon, Source.getSQLMode());
+                //Util.ExecuteScript(TargetCon, Source.getSQLMode());
                 Util.ExecuteScript(TargetCon, Source.getSourceScript());
-                new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSQLMode() + "//\n", true, false);
+                //new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSQLMode() + "//\n", true, false);
                 for (String SQL : Source.getSourceScript()) {
                     new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", SQL + "//\n", true, false);                    
                 }

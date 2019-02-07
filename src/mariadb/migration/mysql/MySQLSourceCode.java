@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import mariadb.migration.SourceCodeHandler;
+import mariadb.migration.Util;
 
 public class MySQLSourceCode implements SourceCodeHandler {
 	private String SchemaName, ObjectName, ObjectType, SqlMode, FullObjectName;
@@ -37,10 +38,12 @@ public class MySQLSourceCode implements SourceCodeHandler {
 			if (oResultSet.next()) {
 				//Read and append schema name before the Procedure/Function name, can be enclosed between `` or ""
 				SqlMode="SET SQL_MODE = '" + oResultSet.getString(2) + "'";
+
+				SourceCodeScript.add(SqlMode);
 				SourceCodeScript.add("DROP " + ObjectType + " IF EXISTS " + FullObjectName);
-				SourceCodeScript.add(oResultSet.getString(3).replace(" `"
-										+ObjectName+"`", " `" + SchemaName + "`." + "`"+ObjectName+"`" ).replace(" \""
-										+ObjectName+"\"", " \"" + SchemaName + "\"." + "\""+ObjectName+"\"" ));
+
+				//Custom Function to replace " with ` from start to the place until ObjectName!
+				SourceCodeScript.add(Util.ReplaceString(oResultSet.getString(3), '"', '`', ObjectName));
 			}
 
 			oResultSet.close();

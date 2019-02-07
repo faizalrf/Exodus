@@ -31,9 +31,9 @@ public class MySQLExodusSingle {
 	}
 	
 	public void start() {
-		ExodusWorker MySQLExodusWorker = new ExodusWorker(SourceCon, TargetCon, Table, MigrationTask);
 		try {
 			if (!Table.hasTableMigrated()) {
+				ExodusWorker MySQLExodusWorker = new ExodusWorker(SourceCon, TargetCon, Table, MigrationTask);
 				RowsMigrated = MySQLExodusWorker.Exodus();
 			} else {
 				System.out.println("Processing Table " + Util.rPad(Table.getFullTableName(), 63, " ") + "--> " + "Already Migrated, SKIPPED!");

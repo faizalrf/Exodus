@@ -17,6 +17,7 @@ public class MySQLConnect implements DBConHandler {
     private String dbUrl;
     private String ConnectionName;
     private String SQLMode;
+    private String LocalSQLMode;
     private DBCredentialsReader UCR;
     private DataSources UC;
     private Connection dbConnection = null;
@@ -43,12 +44,12 @@ public class MySQLConnect implements DBConHandler {
 
     public Connection getDBConnection() { return dbConnection; }
 
-    //TODO implement methods to store and reset the SQL modes
     public Connection ConnectDB() {
         try {
             dbConnection = DriverManager.getConnection(dbUrl, dbUserName, dbPassword);
             dbConnection.setAutoCommit(false);
             setSQLMode();
+            ResetSQLMode();
         } catch (SQLException e) {
             System.out.println("****** ERROR ******");
             System.out.println("Unable to connect to : " + ConnectionName + " -> " + dbUrl);
@@ -84,16 +85,26 @@ public class MySQLConnect implements DBConHandler {
         String ScriptSQL;
         Statement oStatement;
         ResultSet oResultSet;
-
-        ScriptSQL = "SHOW GLOBAL VARIABLES LIKE 'SQL_MODE'";
         SQLMode = "";
+        LocalSQLMode = "";
         
         try {
-        	oStatement = dbConnection.createStatement();
-        	oResultSet = oStatement.executeQuery(ScriptSQL);
+            //Get the GLOBAL SQL_MODE value
+            ScriptSQL = "SHOW GLOBAL VARIABLES LIKE 'SQL_MODE'";
             
+            oStatement = dbConnection.createStatement();
+        	oResultSet = oStatement.executeQuery(ScriptSQL);            
             if (oResultSet.next()) {
                 SQLMode = "SET GLOBAL SQL_MODE = '" + oResultSet.getString(2) + "'";
+            }
+
+            //Get the Current Session SQL_MODE value
+            ScriptSQL = "SHOW VARIABLES LIKE 'SQL_MODE'";
+            
+            oStatement = dbConnection.createStatement();
+        	oResultSet = oStatement.executeQuery(ScriptSQL);
+            if (oResultSet.next()) {
+                LocalSQLMode = "SET SQL_MODE = '" + oResultSet.getString(2) + "'";
             }
             oStatement.close();
             oResultSet.close();
@@ -104,5 +115,34 @@ public class MySQLConnect implements DBConHandler {
     
     public String getSQLMode() {
         return SQLMode;
+    }
+
+    //Reset the SQL Mode to ''
+    public void ResetSQLMode() {
+        String ScriptSQL;
+        Statement oStatement;
+        
+        ScriptSQL = "SET SQL_MODE = ''";
+        
+        try {            
+            oStatement = dbConnection.createStatement();
+            oStatement.execute(ScriptSQL);
+            oStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //Revert the SQL Mode back to the Original
+    public void RevertSQLMode() {
+        Statement oStatement;
+        
+        try {            
+            oStatement = dbConnection.createStatement();
+            oStatement.execute(LocalSQLMode);
+            oStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

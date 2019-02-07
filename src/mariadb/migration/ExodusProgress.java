@@ -16,7 +16,7 @@ public class ExodusProgress {
 	
 	//Constructor Connect to the TargetDB
 	public ExodusProgress() { 
-		TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB")); 
+		//TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB")); 
 	}
 	
 	//Constructor with Source Table as a parameter
@@ -42,12 +42,16 @@ public class ExodusProgress {
 					sqlStatement = "INSERT INTO " + SchemaName + ".MigrationLog(SchemaName, TableName, SerialNo, TotalRecords) VALUES('" + SchemaName + "', '" + TableName + "', " + SerialNo + ", 0)";
 					StatementObj.executeUpdate(sqlStatement);
 				}
-				TargetCon.getDBConnection().commit();				
-				StatementObj.close();
-				ResultSetObj.close();
-				
+				TargetCon.getDBConnection().commit();								
 			} catch (SQLException e) {
 				e.printStackTrace();
+			} finally {
+				try {
+					StatementObj.close();
+					ResultSetObj.close();				
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
 			}
         }
 	}

@@ -47,29 +47,7 @@ public class Util {
     	return ReturnStatus;
     }
 
-	/*
-	public static long ExecuteScript(DBConHandler TargetCon, List<String> SQLScript) {
-    	long ReturnStatus = 0;
-		Statement StatementObj;
-
-		try {
-			StatementObj = TargetCon.getDBConnection().createStatement();
-
-			for (String SQL : SQLScript) {
-				StatementObj.addBatch(SQL);
-			}
-
-			StatementObj.executeBatch();
-			StatementObj.close();
-		} catch (SQLException e) {
-			System.out.println("*** Failed to Execute: " + SQLScript);
-			e.printStackTrace();
-			ReturnStatus = -1;
-		}
-    	return ReturnStatus;
-	}
-	*/
-
+	//Execute all the queries in the List one by one
 	public static long ExecuteScript(DBConHandler TargetCon, List<String> SQLScript) {
     	long ReturnStatus = 0;
 		Statement StatementObj;
@@ -79,14 +57,13 @@ public class Util {
 
 			//Change this code to execute each script as individual instead of a batch
 			for (String SQL : SQLScript) {
-				//StatementObj.addBatch(SQL);
 				try {
 					StatementObj.execute(SQL);
 				} catch (SQLException ex) {
 					System.out.println("*** Failed to Execute: " + SQL);
+					ex.printStackTrace();
 				}
 			}
-			//StatementObj.executeBatch();
 			TargetCon.getDBConnection().commit();
 			StatementObj.close();
 		} catch (Exception e) {
@@ -145,5 +122,18 @@ public class Util {
 	    	}
     	}
     	return SourceStr + TmpStr;
-    }
+	}
+	
+	//This is specifically created to remove "" quotes from the function/procedure names
+	public static String ReplaceString(String SourceStr, char SearchChar, char ReplaceWithChar, String TargetChar) {
+		StringBuilder TmpStr = new StringBuilder(SourceStr);
+		int TargetCharPosition=SourceStr.indexOf(TargetChar) + TargetChar.length() + 1;
+
+		for (int CharCount=0; CharCount <= TargetCharPosition; CharCount++) {
+			if (SourceStr.charAt(CharCount) == SearchChar) {
+				TmpStr.setCharAt(CharCount, ReplaceWithChar);
+			}
+		}
+		return TmpStr.toString();
+	}
 }
