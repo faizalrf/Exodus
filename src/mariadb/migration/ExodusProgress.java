@@ -3,7 +3,6 @@ package mariadb.migration;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 public class ExodusProgress {
 	DBConHandler TargetCon;
 	
@@ -196,7 +195,8 @@ public class ExodusProgress {
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
 			TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 
-			String sqlStatement = "SELECT Count(*) as MigrationCount, (CASE WHEN Sum(TotalRecords) = 0 AND Max(EndTime) IS NULL THEN -1 ELSE Sum(TotalRecords) - Sum(RecordsLoaded) END) AS Migrated FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
+			String sqlStatement = "SELECT Count(*) as MigrationCount, (CASE WHEN Max(TotalRecords) = 0 AND Max(EndTime) IS NULL THEN -1 ELSE Max(TotalRecords) - Max(RecordsLoaded) END) AS Migrated FROM " + 
+									SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
 			try {
 				StatementObj = TargetCon.getDBConnection().createStatement();
 				ResultSetObj = StatementObj.executeQuery(sqlStatement);
@@ -225,14 +225,15 @@ public class ExodusProgress {
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
 			TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 		
-			String sqlStatement = "SELECT Count(*) MigrationCount, SUM(TotalRecords) - Sum(RecordsLoaded) AS hasMigrated, MAX(RecordsLoaded) LoadedRecords FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
+			String sqlStatement = "SELECT Count(*) MigrationCount, MAX(TotalRecords) - MAX(RecordsLoaded) AS MigrationBalance, MAX(RecordsLoaded) LoadedRecords FROM " + 
+									SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
 			try {
 				StatementObj = TargetCon.getDBConnection().createStatement();
 				ResultSetObj = StatementObj.executeQuery(sqlStatement);
 				
 				//Being a COUNT(*) query, it will always have 1 record in the result-set!
 				ResultSetObj.next();
-				hasTableMigrated = (ResultSetObj.getInt("MigrationCount") > 0 && ResultSetObj.getInt("hasMigrated") > 0);
+				hasTableMigrated = (ResultSetObj.getInt("MigrationCount") > 0 && ResultSetObj.getInt("MigrationBalance") > 0);
 				
 				StatementObj.close();
 				
@@ -244,6 +245,29 @@ public class ExodusProgress {
 		}
 		return hasTableMigrated;
 	}
+
+	//Reset the MigrationLog table for the Particular Table
+	public static void ResetTableProgress(String SchemaName, String TableName, Long TotalRows) {
+		Statement StatementObj;
+		DBConHandler TargetCon;
+
+		if (Util.getPropertyValue("DryRun").equals("NO")) {
+			TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));		
+			try {
+				StatementObj = TargetCon.getDBConnection().createStatement();
+				String sqlStatement = "DELETE FROM " + SchemaName + ".MigrationLog WHERE SchemaName = '" + SchemaName + "' AND TableName = '" + TableName + "'";
+				StatementObj.execute(sqlStatement);
+				sqlStatement = "INSERT INTO " + SchemaName + ".MigrationLog(SchemaName, TableName, SerialNo, TotalRecords) VALUES('" + SchemaName + "', '" + TableName + "', 1, " + TotalRows + ")";
+				StatementObj.execute(sqlStatement);
+				TargetCon.getDBConnection().commit();
+				StatementObj.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				TargetCon.DisconnectDB();
+			}
+		}
+	}
 	
 	//Method assumes that DB2Table object has not yet been instantiated!
 	public static int getSerialNo(String SchemaName, String TableName) {
@@ -251,7 +275,7 @@ public class ExodusProgress {
 		Statement StatementObj;
 		DBConHandler TargetCon;
 		int iSerialNo=0;
-
+		
 		if (Util.getPropertyValue("DryRun").equals("NO")) {
 			TargetCon = new MariaDBConnect(Util.getPropertyValue("TargetDB"));
 			

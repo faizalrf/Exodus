@@ -63,30 +63,9 @@ public class MySQLColumn implements ColumnHandler {
     public String getComment() { return Comment; }
     public void setIsPrimaryKey(boolean pIsPrimaryKey) { isPrimaryKey = pIsPrimaryKey; setColumnScript(); }
     public boolean getIsPrimaryKey() { return isPrimaryKey; }
+    
     public void setColumnScript() {
-	/*
-	+-------------+------------------+-------------------+-------------+-----------+---------------------+-------------------+---------------+--------------------+-------------------+----------------+----------------+
-	| COLUMN_NAME | ORDINAL_POSITION | COLUMN_DEFAULT    | IS_NULLABLE | DATA_TYPE | COLUMN_TYPE         | NUMERIC_PRECISION | NUMERIC_SCALE | CHARACTER_SET_NAME | COLLATION_NAME    | COLUMN_COMMENT | EXTRA          |
-	+-------------+------------------+-------------------+-------------+-----------+---------------------+-------------------+---------------+--------------------+-------------------+----------------+----------------+
-	| id          |                1 | NULL              | NO          | bigint    | bigint(20) unsigned |                20 |             0 | NULL               | NULL              |                | auto_increment |
-	| col1        |                2 | NULL              | YES         | varchar   | varchar(10)         |              NULL |          NULL | latin1             | latin1_swedish_ci |                |                |
-	| col2        |                3 | CURRENT_TIMESTAMP | NO          | timestamp | timestamp           |              NULL |          NULL | NULL               | NULL              |                |                |
-	| col3        |                4 | NULL              | YES         | int       | int(11)             |                10 |             0 | NULL               | NULL              |                |                |
-	| col4        |                5 | NULL              | NO          | date      | date                |              NULL |          NULL | NULL               | NULL              |                |                |
-	+-------------+------------------+-------------------+-------------+-----------+---------------------+-------------------+---------------+--------------------+-------------------+----------------+----------------+
-	5 rows in set (0.00 sec)
-
-	Create Table: CREATE TABLE `test_tab3` (
-	  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-	  `col1` varchar(10) DEFAULT NULL,
-	  `col2` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	  `col3` int(11) DEFAULT NULL,
-	  `col4` date NOT NULL,
-	  UNIQUE KEY `id` (`id`)
-	) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1
-	
-	*/    	
-    	ColumnScript = ColumnName;
+        ColumnScript = ColumnName;
     	if (!ColumnDataType.isEmpty()) {
     		ColumnScript += " " + ColumnDataType + " " + Nulls;
     		if (!DefaultValue.isEmpty()) {

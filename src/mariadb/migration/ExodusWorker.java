@@ -11,9 +11,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 public class ExodusWorker {
-	private boolean DeltaProcessing=false; //, MultiThreaded=false;
+	private boolean DeltaProcessing=false, MultiThreaded=false, RetryOnErrors=false;
 	private String MigrationTask, LogPath;
 	private int BATCH_SIZE = 0;
+	private int BATCH_CALC_SIZE = 0;
 	private DBConHandler SourceCon, TargetCon;
 	private TableHandler Table;
 	private ExodusProgress Prog;
@@ -30,14 +31,23 @@ public class ExodusWorker {
 		LogPath = Util.getPropertyValue("LogPath");
 		TableLog = new Logger(LogPath + "/" + Table.getFullTableName() + ".log", true);
 		BATCH_SIZE = Integer.valueOf(Util.getPropertyValue("TransactionSize"));
+		BATCH_CALC_SIZE = Integer.valueOf(Util.getPropertyValue("BatchTimeCalculatorSize"));
+		RetryOnErrors = Util.getPropertyValue("RetryOnErrors").equals("YES");
 
 		//Identify if the Table has already been partially Migrated or not!
-		DeltaProcessing = ExodusProgress.hasTablePartiallyMigrated(Table.getSchemaName(), Table.getTableName());
-
+		if (ExodusProgress.hasTablePartiallyMigrated(Table.getSchemaName(), Table.getTableName())) {
+			//Truncate the table if Overwrite option is defined
+			if (Util.getPropertyValue("OverwritePartiallyMigratedTables").equals("YES")) {
+				System.out.println("Overwriting the Partially Migrated Table " + Table.getTableName());
+				Util.ExecuteScript(TargetCon, "TRUNCATE TABLE " + Table.getFullTableName());
+			} else {
+				DeltaProcessing = true;
+			}
+		}
 		//This decides how the output will be logged on Screen
-		//MultiThreaded = (Integer.valueOf(Util.getPropertyValue("ThreadCount")) > 1);
+		MultiThreaded = (Integer.valueOf(Util.getPropertyValue("ThreadCount")) > 1);
 	}
-	
+
 	//Data Migration Logic goes here... Takes care of Delta/Full migration
 	public long Exodus() throws SQLException {
 		String SourceSelectSQL, TargetInsertSQL, ColumnType, ErrorString, OutString;
@@ -252,8 +262,8 @@ public class ExodusWorker {
 						RerunBatchRowCounter++;
 					}
 					
-					//Batch has reached its COMMIT point or its the last batch which may \
-					//be less than theperfect batch size, we still want to process it
+					//Batch has reached its COMMIT point or its the last batch which may
+					//be less than the perfect batch size, we still want to process it
 			        if (BatchRowCounter % BATCH_SIZE == 0) {
 						BatchError=false;
 
@@ -296,7 +306,7 @@ public class ExodusWorker {
 						}
 
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
-						if (BatchCounter % 10 == 0) {
+						if (BatchCounter % BATCH_CALC_SIZE == 0) {
 							//Seconds Taken from Start to Now!
 							SecondsTaken = ChronoUnit.SECONDS.between(StartDT, LocalTime.now());
 							if (SecondsTaken == 0) {
@@ -323,7 +333,8 @@ public class ExodusWorker {
 					e.printStackTrace();
 				}
 
-				if (BatchError) {
+				//If there are errors and Retry on Errors is set to YES
+				if (BatchError && RetryOnErrors) {
 					for (int RevCounter=0; RevCounter < BatchRowCounter; RevCounter++) {
 						SourceResultSetObj.previous();
 					}
