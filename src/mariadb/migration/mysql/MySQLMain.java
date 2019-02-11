@@ -210,7 +210,7 @@ public class MySQLMain {
 
         return true;
     }
-
+    
     //Migrate PLSQL, Triggers, Views based on Property CreateViews,  CreatePLSQL, CreateTriggers    
     public void CreateOtherObjects(SchemaHandler oSchema, DBConHandler TargetCon) {
         if (DryRun) {
@@ -224,7 +224,9 @@ public class MySQLMain {
 
             //Create Views
             for (ViewHandler View : oSchema.getViewsList()) {
+				System.out.print(Util.rPad("Migrating View Script " + View.getFullViewName(), 80, " ") + "--> [ .. ]");
                 Util.ExecuteScript(TargetCon, View.getViewScript());
+				System.out.print("\r" + Util.rPad("Migrating View Script " + View.getFullViewName(), 80, " ") + "--> [ OK ]\n");
                 for (String SQL : View.getViewScript()) {
                     new Logger(Util.getPropertyValue("DDLPath") + "/Views.sql", SQL + ";\n", true, false);
                 }
@@ -240,7 +242,9 @@ public class MySQLMain {
             //Create Stored Procedures / Functions
             for (SourceCodeHandler Source : oSchema.getSourceCodeList()) {
                 //Util.ExecuteScript(TargetCon, Source.getSQLMode());
+				System.out.print(Util.rPad("Migrating " + Source.getSourceType() + " Code Script " + Source.getFullObjectName(), 80, " ") + "--> [ .. ]");
                 Util.ExecuteScript(TargetCon, Source.getSourceScript());
+				System.out.print("\r" + Util.rPad("Migrating " + Source.getSourceType() + " Code Script " + Source.getFullObjectName(), 80, " ") + "--> [ OK ]\n");
                 //new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", Source.getSQLMode() + "//\n", true, false);
                 for (String SQL : Source.getSourceScript()) {
                     new Logger(Util.getPropertyValue("DDLPath") + "/PLSQL.sql", SQL + "//\n", true, false);                    
@@ -256,10 +260,12 @@ public class MySQLMain {
             
             //Create Triggers
             for (TableHandler Tab : oSchema.getTables()) {
+                System.out.print(Util.rPad("Migrating Trigger For Table " + Tab.getFullTableName(), 80, " ") + "--> [ .. ]");
                 for (String TriggerScript: Tab.getTriggers()) {
                     Util.ExecuteScript(TargetCon, TriggerScript);
                     new Logger(Util.getPropertyValue("DDLPath") + "/Triggers.sql", TriggerScript + "//\n", true, false);
                 }
+                System.out.print("\r" + Util.rPad("Migrating Trigger For Table " + Tab.getFullTableName(), 80, " ") + "--> [ OK ]\n");
             }
             new Logger(Util.getPropertyValue("DDLPath") + "/Triggers.sql", "DELIMITER ;", true, false);
             System.out.println("Migration of Trigger Scripts Completed...");

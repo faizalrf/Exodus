@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import mariadb.migration.Util;
 import mariadb.migration.ViewHandler;
 
 public class MySQLView implements ViewHandler {
@@ -21,14 +22,14 @@ public class MySQLView implements ViewHandler {
         FullViewName = "`" + SchemaName + "`.`" + ViewName + "`";
         setViewScript();
 	}
-    
+
     public void setViewScript() {
         String ScriptSQL;
-        
+
 		Statement oStatement;
 		ResultSet oResultSet;
 		ScriptSQL = "SHOW CREATE VIEW " + FullViewName;
-		
+
 		try {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
@@ -40,6 +41,8 @@ public class MySQLView implements ViewHandler {
 				ViewScript.add(oResultSet.getString(2).replace(" `"+ViewName+"`", " `" 
 								+ SchemaName + "`." + "`"+ViewName+"`").replace(" \""+ViewName+"\"", " \"" 
 								+ SchemaName + "\"." + "\""+ViewName+"\""));
+				System.out.println(Util.rPad("Reading View Script " + FullViewName, 80, " ") + "--> [ OK ]");
+
 			}
 
 			oResultSet.close();
@@ -51,5 +54,9 @@ public class MySQLView implements ViewHandler {
 
     public List<String> getViewScript() {
         return ViewScript;
-    }
+	}
+	
+	public String getFullViewName() {
+		return FullViewName;
+	}
 }

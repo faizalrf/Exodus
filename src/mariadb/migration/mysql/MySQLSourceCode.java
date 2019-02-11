@@ -27,11 +27,11 @@ public class MySQLSourceCode implements SourceCodeHandler {
 
     public void setSourceScript() {
         String ScriptSQL;
-        
+
 		Statement oStatement;
 		ResultSet oResultSet;
 		ScriptSQL = "SHOW CREATE " + ObjectType + " " + FullObjectName;
-		
+
 		try {
 			oStatement = oCon.createStatement();
 			oResultSet = oStatement.executeQuery(ScriptSQL);
@@ -42,6 +42,7 @@ public class MySQLSourceCode implements SourceCodeHandler {
 				SourceCodeScript.add(SqlMode);
 				SourceCodeScript.add("DROP " + ObjectType + " IF EXISTS " + FullObjectName);
 
+				System.out.println(Util.rPad("Reading " + ObjectType + " Script " + FullObjectName, 80, " ") + "--> [ OK ]");
 				//Custom Function to replace " with ` from start to the place until ObjectName!
 				SourceCodeScript.add(Util.ReplaceString(oResultSet.getString(3), '"', '`', ObjectName));
 			}
@@ -67,5 +68,9 @@ public class MySQLSourceCode implements SourceCodeHandler {
 
     public String getSourceType() {
         return ObjectType;
-    }
+	}
+	
+	public String getFullObjectName() {
+		return FullObjectName;
+	}
 }

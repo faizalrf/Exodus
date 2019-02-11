@@ -8,4 +8,5 @@ public interface SourceCodeHandler {
     List<String> getSourceScript();
     String getSQLMode();
     String getSourceType();
+    String getFullObjectName();
 }
