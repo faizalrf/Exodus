@@ -1,5 +1,5 @@
 # Exodus 1.0
-Exodus is a Java based solution to Migrate MySQL 5.x to MariaDB. With a minimum configuration this tool can migrate the entire database including, user accounts, stored procedures, triggers, views, tables etc. With just one execution. 
+Exodus is a Java based solution to Migrate MySQL 5.x databases to MariaDB. With a minimum configuration this tool can migrate the entire database including, user accounts, stored procedures, triggers, views, tables etc. With just one execution. 
 
 #### Database Setup
 Download the entire bin folder as a ZIP using the "CLONE" function. Once downloaded edit /bin/dbdetails.xml with the connection details for both source and target databases. 
@@ -126,15 +126,38 @@ Other important paramneters
 
 *One important thing to take note is, don't select MySQL internal tables and databases for migration for instance `mysql`, `sys` etc.!*
 
+#### Exodus Database Connections
+
+Edit the `Exodus/bin/dbdetails.xml` and edit the UserName, Password, HostName, PortNumber and a default DataBaseName for both MySQL and MariaDB.
+
+DefaultDatabase can be set to `mysql` this is just the first database Exodus will connect. Since all the databases will be created by Exodus, one don't have to create the target databases in advance.
+
+```
+<DataSources>
+	<DataProvider type="MySQL">
+		<UserName>migration</UserName>
+		<Password>secretpassword</Password>
+		<HostName>192.168.56.158</HostName>
+		<PortNumber>3306</PortNumber>
+		<DatabaseName>mysql</DatabaseName>
+	</DataProvider>
+	<DataProvider type="MariaDB">
+		<UserName>secretpassword</UserName>
+		<Password>password</Password>
+		<HostName>192.168.56.80</HostName>
+		<PortNumber>4006</PortNumber>
+		<DatabaseName>mysql</DatabaseName>
+	</DataProvider>
+</DataSources>
+```
+
 #### Exodus Execution
 
-You will need Java JRE 8 or higher to run this, I am using Java 10.0.2 
+You will need Java JRE 8 or higher to run this, I am using Java 8.x 
 
 ```
 C:\> java -version
-java version "10.0.2" 2018-07-17
-Java(TM) SE Runtime Environment 18.3 (build 10.0.2+13)
-Java HotSpot(TM) 64-Bit Server VM 18.3 (build 10.0.2+13, mixed mode)
+java version "1.8.0_191"
 ```
 
 - For Windows, edit the `WindowsExec.cmd` script and modify the CLASSPATH to point to your `bin\resources` folder depending on where you extracted the ZIP file.
