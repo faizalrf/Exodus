@@ -115,7 +115,7 @@ public class MySQLTable implements TableHandler {
 				TableScript = TableScript.replace("GENERATED ALWAYS AS", "AS");
 				TableScript = TableScript.replace("VIRTUAL NULL", "VIRTUAL");
 				TableScript = TableScript.replace("STORED NOT NULL", "PERSISTENT");
-				TableScript = TableScript.replace(" DEFAULT '0000-00-00 00:00:00'", " DEFAULT CURRENT_TIMESTAMP()");
+				//TableScript = TableScript.replace(" DEFAULT '0000-00-00 00:00:00'", " DEFAULT CURRENT_TIMESTAMP()");
 				//System.out.println(TableScript);
 			}
 			
@@ -336,7 +336,7 @@ public class MySQLTable implements TableHandler {
 					MyTriggers.add("SET SQL_MODE = '" + TriggerScriptRs.getString(2) + "'");
 					MyTriggers.add("DROP TRIGGER IF EXISTS " + FullTriggerName);
 					MyTriggers.add(TriggerScript);
-					System.out.println(Util.rPad("Reading Trigger Script " + FullTriggerName, 80, " ") + "--> [ OK ]");
+					//System.out.println(Util.rPad("Reading Trigger Script " + FullTriggerName, 80, " ") + "--> [ OK ]");
 				}
 
 				TriggerScriptRs.close();

@@ -152,7 +152,7 @@ public class ExodusWorker {
             //Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
 			
 			//Default Time Remaining is 30 Minute  
-			SecondsRemaining=1800;
+			SecondsRemaining=1;
 
 			//Process the Batch
 			while (SourceResultSetObj.next()) {
@@ -306,7 +306,7 @@ public class ExodusWorker {
 						}
 
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
-						if (BatchCounter % BATCH_CALC_SIZE == 0) {
+						if (BatchCounter % BATCH_CALC_SIZE == 0 && TmpBatchSize == 0) {
 							//Seconds Taken from Start to Now!
 							SecondsTaken = ChronoUnit.SECONDS.between(StartDT, LocalTime.now());
 							if (SecondsTaken == 0) {
@@ -346,6 +346,7 @@ public class ExodusWorker {
 					TmpBatchSize = BATCH_SIZE;
 					BatchRowCounter = 0;
 					BATCH_SIZE = 1;
+					SecondsRemaining=1;
 				}
 			}
 			////Pre and Post Batch Insert statments have been removed and no longer needed

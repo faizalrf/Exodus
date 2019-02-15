@@ -16,9 +16,10 @@ public class Exodus {
                 System.out.println("MySQL Migration Job Completed...\n");
                 break;
             case "db2":
+                System.out.println("\nExodus " + args[0] + " not ready yet!!!\n\n");
                 break;
         case "oracle":
-                System.out.println("\n" + args[0] + " Code not ready yet!!!\n\n");
+                System.out.println("\nExodus " + args[0] + " not ready yet!!!\n\n");
                 break;
             default:
                 System.out.println("\nUnknown Source Database!\nValid options: MySQL, DB2, ORACLE\n\n");

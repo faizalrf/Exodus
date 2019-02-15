@@ -77,7 +77,7 @@ public class MySQLSchema implements SchemaHandler {
         Statement oStatement;
         ResultSet oResultSet;
         TablesSQL = "SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES " +
-        				"WHERE TABLE_SCHEMA='" + SchemaName + "' AND TABLE_TYPE IN ('BASE TABLE', 'VIEW')";
+        				"WHERE TABLE_SCHEMA='" + SchemaName + "' AND TABLE_TYPE IN ('BASE TABLE', 'VIEW') ORDER BY TABLE_TYPE, TABLE_NAME";
 
         try {
         	oStatement = SourceCon.createStatement();
