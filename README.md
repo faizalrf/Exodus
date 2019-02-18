@@ -1,6 +1,8 @@
 # Exodus 1.0
 Exodus is a Java based solution to Migrate MySQL 5.x databases to MariaDB. With a minimum configuration this tool can migrate the entire database including, user accounts, stored procedures, triggers, views, tables etc. With just one execution. 
 
+Demo / Tutorial: https://youtu.be/iuG8xhCUVEw
+
 #### Database Setup
 Download the entire bin folder as a ZIP using the "CLONE" function. Once downloaded edit /bin/dbdetails.xml with the connection details for both source and target databases. 
 
@@ -169,5 +171,3 @@ java version "1.8.0_191"
 Make sure `java -version` works for your session and then execute either of the above two scripts depending on your environment.
 
 This script can run from a third machine which has access to both MySQL and MariaDB databases.
-
-A Demo and tutorial can be found at https://youtu.be/QFbfcIXoBo8
