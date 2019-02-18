@@ -170,3 +170,4 @@ Make sure `java -version` works for your session and then execute either of the 
 
 This script can run from a third machine which has access to both MySQL and MariaDB databases.
 
+A Demo and tutorial can be found at https://youtu.be/QFbfcIXoBo8
