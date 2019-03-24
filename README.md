@@ -74,6 +74,9 @@ DryRun=NO
 #This is only applicable for data migration, if set to YES, on a batch failure, the same batch will be re-tried in Single ROW mode (YES/NO)
 RetryOnErrors=YES
 
+#This will truncate and overwrite all the tables weather fully or partially migrated, migration can be re-run and it will overwrite all the tables every time
+OverWriteTables=NO
+
 #This will truncate the tables that were partially migrated previously, With this property enabled, migration can be re-run and it will continue from the last table (YES/NO)
 OverwritePartiallyMigratedTables=YES
 
@@ -90,6 +93,9 @@ UserGrants=YES
 
 #TransactionSize is the size of the Batch, COMMIT will be executed after for each batch size.
 TransactionSize=5000
+
+#The following Names should always be there, any additional tables, just add on to the list or use "AND additional expression"
+SkipTableMigration=TABLE_NAME IN ('MigrationLog', 'MigrationLogDETAIL')
 ```
 
 For first time, change the `DryRun=NO` to `YES` so that we can be sure of our setup.
@@ -104,6 +110,8 @@ Other important paramneters
   - When enabled, this will force Exodus to just do tables and object scans without changing anything on the target database. Advisable to run once with DryRun=YES to ensure that connectivity works and the tables/objects can be read properly.
 - `RetryOnErrors`
   - Since the commit is done on batches which is decided by `TransactionSize` property, in case of any data errors the entire batch is rolled back, if `RetryOnErrors=YES`, on hitting error while executing a batch, the batch mode will be disabled and the failed batch will be re-tried in single row mode. This will cause only the failed rows to skip while the rest of the data will migrate successfully. 
+- `OverWriteTables`
+  - If this flag is set to `YES`, all the tables will be TRUNCATED before writing data from source. This is good when doing reverse migration as a fallback plan or just want to re-migrate everything.
 - `OverwritePartiallyMigratedTables`
   - In case the migration was cancelled while a table was being migrated, upon re-running the Exodus, the already completed tables will be skipped however the partially done table will get a "TRUNCATE" call and migration will start from row one for it. This makes the re-running the batch easier and simple.
 - `UsersToMigrate`
@@ -125,6 +133,9 @@ Other important paramneters
   - YES/NO will decide if User Grants will be migrated or not.
 - `MigrateData`
   - YES/NO will decide if Table's DDL and Data will be migrated or not.
+- `SkipTableMigration`
+  - This currently hold `MigraitonLog` and `MigrationLogDetail` values. This is useful for reverse migration because we don't want to migrate the Migration log that exists in the source in the case of a fallback migration for instance `MariaDB -> MySQL` 
+  - Any additional tables to be skipped should just be added on to the criteria list
 
 *One important thing to take note is, don't select MySQL internal tables and databases for migration for instance `mysql`, `sys` etc.!*
 
