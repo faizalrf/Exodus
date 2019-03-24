@@ -10,7 +10,7 @@
 	<DataProvider type="MariaDB">
 		<UserName>migration</UserName>
 		<Password>password</Password>
-		<HostName>192.168.56.59</HostName>
+		<HostName>192.168.56.168</HostName>
 		<PortNumber>3306</PortNumber>
 		<DatabaseName>mysql</DatabaseName>
 	</DataProvider>

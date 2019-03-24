@@ -1,6 +1,6 @@
 @echo off
 cls
-set CLASSPATH=.;C:\Users\faisa\OneDrive\Work\Java\Exodus\bin\resources\mariadb-java-client-2.3.0.jar;C:\Users\faisa\OneDrive\Work\Java\Exodus\bin\resources\mysql-connector-java-8.0.12.jar
+set CLASSPATH=.;C:\Users\faisa\OneDrive\Work\Java\Exodus\bin\resources\mariadb-java-client-2.4.1.jar
 
 mkdir resources>nul 2>nul
 mkdir ddl>nul 2>nul

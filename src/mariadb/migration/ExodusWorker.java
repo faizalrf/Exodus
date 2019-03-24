@@ -34,16 +34,22 @@ public class ExodusWorker {
 		BATCH_CALC_SIZE = Integer.valueOf(Util.getPropertyValue("BatchTimeCalculatorSize"));
 		RetryOnErrors = Util.getPropertyValue("RetryOnErrors").equals("YES");
 
-		//Identify if the Table has already been partially Migrated or not!
-		if (ExodusProgress.hasTablePartiallyMigrated(Table.getSchemaName(), Table.getTableName())) {
-			//Truncate the table if Overwrite option is defined
-			if (Util.getPropertyValue("OverwritePartiallyMigratedTables").equals("YES")) {
-				System.out.println("Overwriting the Partially Migrated Table " + Table.getTableName());
-				Util.ExecuteScript(TargetCon, "TRUNCATE TABLE " + Table.getFullTableName());
-			} else {
-				DeltaProcessing = true;
+		//Truncate the table if Overwrite option is defined
+		if (Util.getPropertyValue("OverWriteTables").equals("YES")) {
+			Util.ExecuteScript(TargetCon, "TRUNCATE TABLE " + Table.getFullTableName());
+		} else {
+			//Identify if the Table has already been partially Migrated or not!
+			if (ExodusProgress.hasTablePartiallyMigrated(Table.getSchemaName(), Table.getTableName())) {
+				//Truncate the table if Overwrite option is defined
+				if (Util.getPropertyValue("OverwritePartiallyMigratedTables").equals("YES")) {
+					System.out.println("Overwriting the Partially Migrated Table " + Table.getTableName());
+					Util.ExecuteScript(TargetCon, "TRUNCATE TABLE " + Table.getFullTableName());
+				} else {
+					DeltaProcessing = true;
+				}
 			}
 		}
+		
 		//This decides how the output will be logged on Screen
 		MultiThreaded = (Integer.valueOf(Util.getPropertyValue("ThreadCount")) > 1);
 	}

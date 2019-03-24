@@ -38,7 +38,7 @@ public class MySQLConnect implements DBConHandler {
         dbName = UC.getDBName();
         dbUserName = UC.getUserName();
         dbPassword = UC.getPassword();
-        dbUrl="jdbc:mysql://" + hostName + ":" + portNumber.toString() + "/" + dbName + "?" + Util.getPropertyValue("SourceConnectParams");;
+        dbUrl=Util.getPropertyValue("SourceConnectPrefix") + hostName + ":" + portNumber.toString() + "/" + dbName + "?" + Util.getPropertyValue("SourceConnectParams");
         dbConnection = ConnectDB();
     }
 
@@ -95,7 +95,8 @@ public class MySQLConnect implements DBConHandler {
             oStatement = dbConnection.createStatement();
         	oResultSet = oStatement.executeQuery(ScriptSQL);            
             if (oResultSet.next()) {
-                SQLMode = "SET GLOBAL SQL_MODE = '" + oResultSet.getString(2) + "'";
+                //SQLMode = "SET GLOBAL SQL_MODE = '" + oResultSet.getString(2) + "'";
+                SQLMode = "SET GLOBAL SQL_MODE = ''";
             }
 
             //Get the Current Session SQL_MODE value
@@ -104,7 +105,8 @@ public class MySQLConnect implements DBConHandler {
             oStatement = dbConnection.createStatement();
         	oResultSet = oStatement.executeQuery(ScriptSQL);
             if (oResultSet.next()) {
-                LocalSQLMode = "SET SQL_MODE = '" + oResultSet.getString(2) + "'";
+                //LocalSQLMode = "SET SQL_MODE = '" + oResultSet.getString(2) + "'";
+                LocalSQLMode = "SET SQL_MODE = ''";
             }
             oStatement.close();
             oResultSet.close();

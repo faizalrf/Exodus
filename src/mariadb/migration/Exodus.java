@@ -5,10 +5,19 @@ public class Exodus {
     public static void main(String[] args) {
         String CommandLineParam = "mysql";
 
+        System.out.println("███╗   ███╗ █████╗ ██████╗ ██╗ █████╗ ██████╗ ██████╗     ███████╗██╗  ██╗ ██████╗ ██████╗ ██╗   ██╗███████╗");
+        System.out.println("████╗ ████║██╔══██╗██╔══██╗██║██╔══██╗██╔══██╗██╔══██╗    ██╔════╝╚██╗██╔╝██╔═══██╗██╔══██╗██║   ██║██╔════╝");
+        System.out.println("██╔████╔██║███████║██████╔╝██║███████║██║  ██║██████╔╝    █████╗   ╚███╔╝ ██║   ██║██║  ██║██║   ██║███████╗");
+        System.out.println("██║╚██╔╝██║██╔══██║██╔══██╗██║██╔══██║██║  ██║██╔══██╗    ██╔══╝   ██╔██╗ ██║   ██║██║  ██║██║   ██║╚════██║");
+        System.out.println("██║ ╚═╝ ██║██║  ██║██║  ██║██║██║  ██║██████╔╝██████╔╝    ███████╗██╔╝ ██╗╚██████╔╝██████╔╝╚██████╔╝███████║");
+        System.out.println("╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═════╝ ╚═════╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚══════╝\n\n");
+        
         if (args.length == 1) {
             CommandLineParam = args[0].toLowerCase();
         }
 
+        System.out.println("Migration Path: " + Util.getPropertyValue("SourceDB") + " -> " + Util.getPropertyValue("TargetDB") + "\n");
+        
         switch (CommandLineParam) {
             case "mysql":
                 System.out.println("-\nStarting MySQL Migration Job...");
@@ -23,7 +32,7 @@ public class Exodus {
                 break;
             default:
                 System.out.println("\nUnknown Source Database!\nValid options: MySQL, DB2, ORACLE\n\n");
-                break;
+                break;                                                                                                                                            
         }
         return;
     }

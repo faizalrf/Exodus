@@ -32,7 +32,8 @@ public class MySQLExodusSingle {
 	
 	public void start() {
 		try {
-			if (!Table.hasTableMigrated()) {
+			//If Table has not already migrated or the OverWrite Flag is set to YES, then proceed
+			if (!Table.hasTableMigrated() || Util.getPropertyValue("OverWriteTables").equals("YES")) {
 				ExodusWorker MySQLExodusWorker = new ExodusWorker(SourceCon, TargetCon, Table, MigrationTask);
 				RowsMigrated = MySQLExodusWorker.Exodus();
 			} else {
