@@ -63,13 +63,12 @@ public class ExodusWorker {
 		float TimeforOneRecord;
 		boolean BatchError = false;
 
-		//Dont need it
+		//Don't need it
 		//IsLastBatchCycle = false, 
 
 		//To Track Start/End and Estimate Time of Completion
 		LocalTime StartDT;
 		//LocalTime EndDT;
-	
 		int ColumnCount, BatchRowCounter, IntValue, BatchCounter=0, NumberOfBatches=0, TmpBatchSize=0, RerunBatchRowCounter=0;
 		float ProgressPercent;
 		
@@ -243,7 +242,8 @@ public class ExodusWorker {
 			                case "TINYBLOB":
 			                case "BLOB":
 			                case "MEDIUMBLOB":
-			                case "LONGBLOB":
+							case "LONGBLOB":
+							case "JSON":	//JSON is internally mapped to LONGBLOB. this case is added here juist in case
 			                	BlobObj = SourceResultSetObj.getBytes(Col);
 			                	if (BlobObj != null) 
 			                		//Use setBytes / getBytes for BLOB
