@@ -212,7 +212,6 @@ public class MySQLTable implements TableHandler {
 			MyDeltaScripts.add("CREATE DATABASE IF NOT EXISTS " + DeltaDBName);
 			MyDeltaScripts.add(DeltaTableScript);
 		}
-		System.out.println(SelectMD5);
 	}
 
 	public void setConstraints() {
