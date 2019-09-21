@@ -102,20 +102,11 @@ public class ExodusWorker {
 			SourceSelectSQL = Table.getTableSelectScript();
 			TableLog.WriteLog("Processing Started for - " + Table.getTableName() + " Total Records to Migrate " + Util.numberFormat.format(TotalRecords));
 
-			////Pre and Post Batch Insert statments have been removed and no longer needed
-			//Pre Batch Execution Scripts from the Property File if any
-			//In This case this sets the SQL_MODE so that tables from source with 0000-00-00 DATE/DATETIME/TIMESTAMP fields can be created
-			//Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
-
 			//Try to create the target table and skip this entire process if any errors
 			if (Util.ExecuteScript(TargetCon, Table.getTableScript()) < 0) {
 				TableLog.WriteLog("Failed to create target table, Process aborted!");
 				return -1;
 			}
-
-			////Pre and Post Batch Insert statments have been removed and no longer needed
-			//Execute any Post Batch Scripts on the Current Connectionf
-			//Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
 
 			new Logger(Util.getPropertyValue("DDLPath") + "/" + Table.getFullTableName() + ".sql", Table.getTableScript() + ";", false, false);
 		}
@@ -131,13 +122,18 @@ public class ExodusWorker {
 
 		TargetInsertSQL = Table.getTargetInsertScript();
 		
-		//First output for tables that take longer to open the resultset
-		System.out.print("Fetching Resultset for " + Table.getFullTableName() + "...");
+		//Don't print this if it's multi-threaded! 
+		if (!MultiThreaded) {
+			//First output for tables that take longer to open the resultset
+			System.out.print("Fetching Resultset for " + Table.getFullTableName() + "...");
+		}
+
 		try {
 			//Reverse Scrollable Resultset
 			SourceStatementObj = SourceCon.getDBConnection().createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 
 			SourceResultSetObj = SourceStatementObj.executeQuery(SourceSelectSQL);
+			
 			//Get the Meta data of the Source ResultSet, this will be used to get the list of columns in the ResultSet.
 			SourceResultSetMeta = SourceResultSetObj.getMetaData();
 	        ColumnCount = SourceResultSetMeta.getColumnCount();
@@ -152,10 +148,6 @@ public class ExodusWorker {
 			//EndDT = LocalTime.now();
 			RecordsPerSecond = BATCH_SIZE;
 
-			////Pre and Post Batch Insert statments have been removed and no longer needed
-			//Pre Batch Execution Scripts from the Property File if any
-            //Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PreBatchInsertStatements"));
-			
 			//Default Time Remaining is 30 Minute  
 			SecondsRemaining=1;
 
@@ -311,8 +303,8 @@ public class ExodusWorker {
 							BATCH_SIZE = (int)(TotalRecords - CommitCount);
 						}
 
-						//Don't calculate time for each commit, but wait for 10 batches to re-estimate
-						if (BatchCounter % BATCH_CALC_SIZE == 0 && TmpBatchSize == 0) {
+						//Don't calculate time for each commit, but wait for 10 batches to re-estimate, don't do this when running multi-threaded
+						if (BatchCounter % BATCH_CALC_SIZE == 0 && TmpBatchSize == 0 && !MultiThreaded) {
 							//Seconds Taken from Start to Now!
 							SecondsTaken = ChronoUnit.SECONDS.between(StartDT, LocalTime.now());
 							if (SecondsTaken == 0) {
@@ -329,7 +321,10 @@ public class ExodusWorker {
 						ProgressPercent = ((float)CommitCount / (float)TotalRecords * 100f);
 
 						OutString = Util.rPad(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> " + Util.lPad(Util.percentFormat.format(ProgressPercent) + "%", 7, " ") + " [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - ETA       [" + Util.TimeToString(SecondsRemaining) + "]";
-						System.out.print("\r" + OutString);
+						//To Not print progress on a multi-threaded run
+						if (!MultiThreaded) {
+							System.out.print("\r" + OutString);
+						}
 						TableLog.WriteLog(OutString);
 			        }
 				} catch (SQLException e) {
@@ -355,10 +350,6 @@ public class ExodusWorker {
 					SecondsRemaining=1;
 				}
 			}
-			////Pre and Post Batch Insert statments have been removed and no longer needed
-			//Execute any Post Batch Scripts on the Current Connection
-			//Util.ExecuteScript(TargetCon, Util.GetExtraStatements("MariaDB.PostBatchInsertStatements"));
-
 			//Final Output
 			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "]";
 			

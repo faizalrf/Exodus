@@ -179,8 +179,9 @@ public class MySQLMain {
         		//If any thread has completed, remove it from the list and decrease ActiveThreadCount by 1
         		if (!ThreadWorker.get(x).isThreadActive()) {
         			ThreadWorker.remove(x);
-        			CurrentThreadCount--;
-        	        System.out.print("\nThread Removed, Current Queue Size: " + CurrentThreadCount);
+                    CurrentThreadCount--;
+                    
+        	        System.out.println("\nThread Removed, Current Queue Size: " + CurrentThreadCount);
         		}
         	try {
 				Thread.sleep(1000);
