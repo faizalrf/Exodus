@@ -17,6 +17,7 @@ public class MySQLColumn implements ColumnHandler {
     private String Comment;
     private String ColumnScript;
     private boolean isPrimaryKey;
+    private boolean isNullable;
     
     public MySQLColumn() {
     	ColumnName="";
@@ -33,6 +34,7 @@ public class MySQLColumn implements ColumnHandler {
         Collation="";
         Comment="";
         isPrimaryKey=false;
+        isNullable=false;
     	ColumnScript="";
     }
     public void setName(String pName) { ColumnName = pName; setColumnScript(); }
@@ -49,7 +51,7 @@ public class MySQLColumn implements ColumnHandler {
     public int getScale() { return Scale; }
     public void setDefaultValue(String pDefaultValue) {	DefaultValue = pDefaultValue; setColumnScript(); }
     public String getDefaultValue() { return DefaultValue; }
-    public void setNulls(String pNulls) { Nulls = pNulls; setColumnScript(); }
+    public void setNulls(String pNulls) { Nulls = pNulls; isNullable = pNulls.equals("null"); setColumnScript(); }
     public String getNulls() { return Nulls; }
     public void setSpecialText(String pSpecialText) { SpecialText = pSpecialText; setColumnScript(); }
     public String getSpecialText() { return SpecialText; }
@@ -63,6 +65,7 @@ public class MySQLColumn implements ColumnHandler {
     public String getComment() { return Comment; }
     public void setIsPrimaryKey(boolean pIsPrimaryKey) { isPrimaryKey = pIsPrimaryKey; setColumnScript(); }
     public boolean getIsPrimaryKey() { return isPrimaryKey; }
+    public boolean IsNullable() { return isNullable; }
     
     public void setColumnScript() {
         ColumnScript = ColumnName;
@@ -93,4 +96,5 @@ public class MySQLColumn implements ColumnHandler {
     public String getColumnScript() {
     	return ColumnScript;
     }
+
 }

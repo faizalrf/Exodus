@@ -16,7 +16,7 @@ import mariadb.migration.Util;
 public class MySQLTable implements TableHandler {
 	private String SchemaName, TableName, TableScript, DeltaSelectScript, FullTableName, FullDeltaTableName, SelectColumnList, 
 					RawColumnList, InsertBindList, PrimaryKey, PrimaryKeyBind, TableSelectScript, TargetInsertScript, MyPrimaryKeyScript, 
-					AdditionalCriteria, WHERECriteria, DeltaDBName;
+					AdditionalCriteria, WHERECriteria, DeltaDBName, SelectMD5;
 	private ColumnCollectionHandler MyCol;
 
 	private List<String> MyPKCols = new ArrayList<String>();
@@ -54,6 +54,7 @@ public class MySQLTable implements TableHandler {
 			RowCount = 0;
 			DeltaRowCount = 0;
 			SelectColumnList = "";
+			SelectMD5 = "";
 			InsertBindList = "";
 			PrimaryKey = "";
 			PrimaryKeyBind = "";
@@ -135,6 +136,7 @@ public class MySQLTable implements TableHandler {
 		PrimaryKey = "";
 		PrimaryKeyBind = "";
 		DeltaTableScript = "";
+		SelectMD5 = "";
 	
 		System.out.print(Util.rPad("Parsing Table Structure " + FullTableName, 80, " ") + "--> ");
 		for (ColumnHandler Col : MyCol.getColumnList()) {
@@ -152,6 +154,13 @@ public class MySQLTable implements TableHandler {
 			RawColumnList += ColumnName + ",";
 			InsertBindList += "?,";
 
+			//Append IFNULL if the Column is NULLABLE
+			if (Col.IsNullable()) {
+				SelectMD5 += "IFNULL(" + ColumnName + ", ''),";
+			} else {
+				SelectMD5 += ColumnName + ",";
+			}
+
 			if (Col.getIsPrimaryKey()) {
 				PrimaryKey += ColumnExpression + ",";
 				PrimaryKeyBind += "?,";
@@ -163,7 +172,6 @@ public class MySQLTable implements TableHandler {
 					FirstKeyCol = "B." + ColumnName;
 				}
 			}
-			//System.out.print("*");
 		}
 		System.out.print(Util.rPad("COLUMNS [" + Util.lPad(String.valueOf(MyCol.getColumnList().size()), 3, " ") + "]", 14, " "));
 		System.out.print("-->  ROWS [" + Util.lPad(Util.numberFormat.format(RowCount), 13, " ") + "]\n");
@@ -174,6 +182,9 @@ public class MySQLTable implements TableHandler {
 			RawColumnList = RawColumnList.substring(0, RawColumnList.length() - 1);
 			TableSelectScript = "SELECT " + SelectColumnList + " FROM " + FullTableName + " A";
 			TargetInsertScript = "INSERT INTO " + FullTableName + "(" + RawColumnList + ") VALUES (" + InsertBindList + ")";
+
+			//To be used to Generate the Hash of a table's Row
+			SelectMD5 = "SELECT MD5(CONCAT(" + SelectMD5.substring(0, SelectMD5.length() - 1) + ")) AS RowHash FROM " + FullTableName;
 		}
 
 		if (!PrimaryKey.isEmpty()) {
@@ -201,6 +212,7 @@ public class MySQLTable implements TableHandler {
 			MyDeltaScripts.add("CREATE DATABASE IF NOT EXISTS " + DeltaDBName);
 			MyDeltaScripts.add(DeltaTableScript);
 		}
+		System.out.println(SelectMD5);
 	}
 
 	public void setConstraints() {
@@ -485,5 +497,9 @@ public class MySQLTable implements TableHandler {
 
 	public boolean hasTableMigrated() {
 		return ExodusProgress.hasTableMigrationCompleted(getSchemaName(), getTableName());
+	}
+
+	public String getMD5DSelectScript() {
+		return SelectMD5;
 	}
 }

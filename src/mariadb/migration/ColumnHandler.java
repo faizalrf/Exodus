@@ -31,4 +31,5 @@ public interface ColumnHandler {
     boolean getIsPrimaryKey();
     void setColumnScript();
     String getColumnScript();
+    public boolean IsNullable();
 }
