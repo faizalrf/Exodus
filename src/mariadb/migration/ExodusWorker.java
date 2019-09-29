@@ -9,12 +9,10 @@ import java.sql.Statement;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-
 public class ExodusWorker {
 	private boolean DeltaProcessing=false, MultiThreaded=false, RetryOnErrors=false;
 	private String MigrationTask, LogPath;
-	private int BATCH_SIZE = 0;
-	private int BATCH_CALC_SIZE = 0;
+	private long BATCH_SIZE = 0, BATCH_CALC_SIZE = 0;
 	private DBConHandler SourceCon, TargetCon;
 	private TableHandler Table;
 	private ExodusProgress Prog;
@@ -24,7 +22,7 @@ public class ExodusWorker {
 		Table = iTable;
 		MigrationTask = iMigrationTask;
 		Prog = new ExodusProgress(Table);
-		
+
         SourceCon = iSourceCon;
         TargetCon = iTargetCon; 
 
@@ -49,7 +47,7 @@ public class ExodusWorker {
 				}
 			}
 		}
-		
+
 		//This decides how the output will be logged on Screen
 		MultiThreaded = (Integer.valueOf(Util.getPropertyValue("ThreadCount")) > 1);
 	}
@@ -59,7 +57,7 @@ public class ExodusWorker {
 		String SourceSelectSQL, TargetInsertSQL, ColumnType, ErrorString, OutString;
 		ResultSetMetaData SourceResultSetMeta;
 	    PreparedStatement PreparedStmt;
-		long MigratedRows=0, TotalRecords=0, CommitCount=0, SecondsTaken, RecordsPerSecond=0, SecondsRemaining=0;
+		long IntValue, MigratedRows=0, TotalRecords=0, CommitCount=0, SecondsTaken, RecordsPerSecond=0, SecondsRemaining=0;
 		float TimeforOneRecord;
 		boolean BatchError = false;
 
@@ -69,14 +67,15 @@ public class ExodusWorker {
 		//To Track Start/End and Estimate Time of Completion
 		LocalTime StartDT;
 		//LocalTime EndDT;
-		int ColumnCount, BatchRowCounter, IntValue, BatchCounter=0, NumberOfBatches=0, TmpBatchSize=0, RerunBatchRowCounter=0;
+		int ColumnCount;
+		long BatchRowCounter, BatchCounter=0, NumberOfBatches=0, TmpBatchSize=0, RerunBatchRowCounter=0;
 		float ProgressPercent;
-		
+
 		byte[] BlobObj;
 		double DoubleValue;
 		BigDecimal BigDecimalValue;
 		float FloatValue;
-		
+
 		if (MigrationTask.equals("SKIP")) {
 			System.out.println("\nTable " + Table.getFullTableName() + " Skipped");
 			TableLog.WriteLog("Table " + Table.getFullTableName() + " Skipped");
@@ -95,6 +94,7 @@ public class ExodusWorker {
 
 		//Check for Delta conditions and actions
 		TotalRecords = Table.getRecordCount();
+
 		if (DeltaProcessing) {
 			SourceSelectSQL = Table.getDeltaSelectScript();
 			TableLog.WriteLog("Delta Processing Started for - " + Table.getTableName() + " Previously Migrated " + Table.getDeltaRecordCount() + "/" + TotalRecords);
@@ -114,14 +114,14 @@ public class ExodusWorker {
 		//See if first records will be able to fit a single BATCH, IF Total Record Count is ZERO, SET BATCH SIZE to 1
 		//THIS IS TO AVOID DIVIDE BY ZERO errors
 	    if (BATCH_SIZE > TotalRecords) {
-			BATCH_SIZE = (int)(TotalRecords == 0 ? 1 : TotalRecords);
+			BATCH_SIZE = (TotalRecords == 0 ? 1 : TotalRecords);
 		}
 
 		//This will be used handle the last batch for a resultset
-		NumberOfBatches = (int)(TotalRecords / BATCH_SIZE);
+		NumberOfBatches = (TotalRecords / BATCH_SIZE);
 
 		TargetInsertSQL = Table.getTargetInsertScript();
-		
+
 		//Don't print this if it's multi-threaded! 
 		if (!MultiThreaded) {
 			//First output for tables that take longer to open the resultset
@@ -129,17 +129,21 @@ public class ExodusWorker {
 		}
 
 		try {
-			//Reverse Scrollable Resultset
-			SourceStatementObj = SourceCon.getDBConnection().createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+			//Reverse Scrollable Resultset only when RetryOnErrors!
+			SourceStatementObj = SourceCon.getDBConnection().createStatement((RetryOnErrors ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY), 
+																		ResultSet.CONCUR_READ_ONLY);
+			
+			//Tuning of the Batch FetchSize for better network utilization
+			SourceStatementObj.setFetchSize((int)BATCH_SIZE);
 
 			SourceResultSetObj = SourceStatementObj.executeQuery(SourceSelectSQL);
-			
+
 			//Get the Meta data of the Source ResultSet, this will be used to get the list of columns in the ResultSet.
 			SourceResultSetMeta = SourceResultSetObj.getMetaData();
 	        ColumnCount = SourceResultSetMeta.getColumnCount();
 	        PreparedStmt = TargetCon.getDBConnection().prepareStatement(TargetInsertSQL);
 	        //Parse through the source query result-set!
-	        
+
 	        ErrorString="";
 	        BatchRowCounter=0;
 			PreparedStmt.clearBatch();
@@ -160,11 +164,11 @@ public class ExodusWorker {
 			            switch (ColumnType) {
 		                	case "INTEGER":
 			                case "INTEGER UNSIGNED": 
-			                	IntValue = SourceResultSetObj.getInt(Col);
+			                	IntValue = SourceResultSetObj.getLong(Col);
 			                    if(SourceResultSetObj.wasNull())
 			                    	PreparedStmt.setNull(Col, java.sql.Types.INTEGER);
 			                    else
-			                    	PreparedStmt.setInt(Col, IntValue);
+			                    	PreparedStmt.setLong(Col, IntValue);
 			                    break;
 							case "TINYCLOB":
 							case "CLOB":
@@ -186,19 +190,19 @@ public class ExodusWorker {
 							case "BIT":
 			                case "TINYINT": 
 			                case "TINYINT UNSIGNED": 
-			                    IntValue = SourceResultSetObj.getInt(Col);
+			                    IntValue = SourceResultSetObj.getLong(Col);
 			                    if(SourceResultSetObj.wasNull())
 			                    	PreparedStmt.setNull(Col, java.sql.Types.TINYINT);
 			                    else
-			                    	PreparedStmt.setInt(Col, IntValue);
+			                    	PreparedStmt.setLong(Col, IntValue);
 			                    break;
 			                case "SMALLINT": 
 			                case "SMALLINT UNSIGNED": 
-			                    IntValue = SourceResultSetObj.getInt(Col);
+			                    IntValue = SourceResultSetObj.getLong(Col);
 			                    if(SourceResultSetObj.wasNull())
 			                    	PreparedStmt.setNull(Col, java.sql.Types.SMALLINT);
 			                    else
-			                    	PreparedStmt.setInt(Col, IntValue);
+			                    	PreparedStmt.setLong(Col, IntValue);
 			                    break;
 			                case "BIGINT": 
 			                case "BIGINT UNSIGNED": 
@@ -251,7 +255,7 @@ public class ExodusWorker {
 					        	throw new SQLException(ErrorString);
 			            }
 			        }
-					
+
 			        PreparedStmt.addBatch();
 					BatchRowCounter++;
 
@@ -259,7 +263,7 @@ public class ExodusWorker {
 					if (TmpBatchSize > 0) {
 						RerunBatchRowCounter++;
 					}
-					
+
 					//Batch has reached its COMMIT point or its the last batch which may
 					//be less than the perfect batch size, we still want to process it
 			        if (BatchRowCounter % BATCH_SIZE == 0) {
@@ -284,7 +288,7 @@ public class ExodusWorker {
 								TmpBatchSize = 0;
 							}
 						}
-												
+
 						TargetCon.getDBConnection().commit();
 
 						//Only Increase batch counter if its not a RERUN, because that batch has already been counted
@@ -300,7 +304,8 @@ public class ExodusWorker {
 
 						//This will Recalculate the Batch size based on the last remaining records after the perfect batches have completed
 						if (NumberOfBatches == BatchCounter) {
-							BATCH_SIZE = (int)(TotalRecords - CommitCount);
+							//Ensure it's not less than equal to ZERO
+							BATCH_SIZE = ((TotalRecords - CommitCount) <= 0 ? 1 : (TotalRecords - CommitCount));
 						}
 
 						//Don't calculate time for each commit, but wait for 10 batches to re-estimate, don't do this when running multi-threaded
@@ -352,10 +357,10 @@ public class ExodusWorker {
 			}
 			//Final Output
 			OutString = Util.rPad(StartDT.truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " - Processing " + Table.getFullTableName(), 79, " ") + " --> 100.00% [" + Util.lPad(Util.numberFormat.format(CommitCount) + " / " + Util.numberFormat.format(TotalRecords) + " @ " + Util.numberFormat.format(RecordsPerSecond) + "/s", 36, " ") + "]  - COMPLETED [" + LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "]";
-			
+
 			System.out.println("\r" + OutString);
 			TableLog.WriteLog(OutString);
-			
+
 			//Close Statements and ResultSet
 	        SourceResultSetObj.close();
         	SourceStatementObj.close();
@@ -364,13 +369,13 @@ public class ExodusWorker {
         	TargetCon.getDBConnection().rollback();
 			new Logger(LogPath + "/" + Table.getFullTableName() + ".err", e.getMessage(), true);
 			e.printStackTrace();
-			
+
 		} finally {	//Cleanup	        
 	        TargetCon.DisconnectDB();
 			SourceCon.DisconnectDB();
 			Prog.ProgressEnd();
 		}
-		
+
 		TableLog.WriteLog("- EOF -");
 		TableLog.CloseLogFile();
 		return MigratedRows;

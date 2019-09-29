@@ -17,6 +17,7 @@ public interface TableHandler {
     long getRecordCount();
     int getColumnCount();
     long getDeltaRecordCount();
+    long getMD5Limit();
     String getTableName();
     String getSchemaName();
     String getFullTableName();

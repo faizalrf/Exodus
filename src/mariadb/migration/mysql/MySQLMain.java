@@ -79,6 +79,8 @@ public class MySQLMain {
             }
             //Create User Grants after all the Tables/Views and PLSQL have been created
             CreateUserGrants(TargetCon, MyDB);
+            //Migration Verificaiton
+            MigrationVerification(SourceCon, TargetCon, MyDB);
         } catch (Exception e) {
             System.out.println("Error While Processing");
             new Logger(LogPath + "/Exodus.err", "Error While Processing - " + e.getMessage(), true);
@@ -157,6 +159,8 @@ public class MySQLMain {
 
                 //Create PLSQL, Triggers, Views etc.
                 CreateOtherObjects(oSchema, TargetCon);
+                //Migration Verificaiton
+                MigrationVerification(SourceCon, TargetCon, MyDB);
             }
             //Create User Grants after all the Tables/Views and PLSQL have been created
             CreateUserGrants(TargetCon, MyDB);
@@ -285,6 +289,20 @@ public class MySQLMain {
             System.out.println("Execution of User Grants Completed...");
         } else {
             System.out.println("\nSkip User Grants");
+        }
+    }
+
+    private void MigrationVerification(DBConHandler SourceCon, DBConHandler TargetCon, DatabaseHandler MyDB) {
+        for (SchemaHandler oSchema : MyDB.getSchemaList()) {
+            System.out.println("\n--------------------------------------------------------");
+            System.out.println("- Starting `" + oSchema.getSchemaName() + "` Verification ");
+            System.out.println("--------------------------------------------------------");
+
+            for (TableHandler Tab : oSchema.getTables()) {
+                if (!ExodusMySQLDataComparison.CompareData(SourceCon, TargetCon, Tab)) {
+                    System.out.println(Tab.getFullTableName() + "` Verification Failed! ");
+                }
+            }
         }
     }
 }

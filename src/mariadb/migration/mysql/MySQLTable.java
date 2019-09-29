@@ -27,7 +27,7 @@ public class MySQLTable implements TableHandler {
 	private List<String> MyCheckConstraints = new ArrayList<String>();
 	private List<String> MyDeltaScripts = new ArrayList<String>();
 	private Connection oCon;
-	private long RowCount, DeltaRowCount;
+	private long RowCount, DeltaRowCount, MD5SelectionPercent;
 	private boolean isMigrationSkipped = false;
 
 	public MySQLTable(Connection iCon, String iSchemaName, String iTableName) {
@@ -43,6 +43,7 @@ public class MySQLTable implements TableHandler {
 		//Split up the Full Table Name into Schena + Table because I have to add "`" to the Full Table Name Variable
 		AdditionalCriteria = Util.getPropertyValue(SchemaName + "." + TableName + ".AdditionalCriteria");
 		WHERECriteria = Util.getPropertyValue(SchemaName + "." + TableName + ".WHERECriteria");
+		MD5SelectionPercent = Integer.valueOf(Util.getPropertyValue("MD5SelectionPercent"));
 
 		if (WHERECriteria.isEmpty()) {
 			WHERECriteria = "1=1";
@@ -499,6 +500,12 @@ public class MySQLTable implements TableHandler {
 	}
 
 	public String getMD5DSelectScript() {
-		return SelectMD5;
+		return SelectMD5 + " LIMIT " + getMD5Limit();
+	}
+
+	public long getMD5Limit() {
+		long MD5Limit;
+		MD5Limit = (RowCount * MD5SelectionPercent / 100);
+		return MD5Limit;
 	}
 }
