@@ -1,7 +1,5 @@
 package mariadb.migration;
 
-import jdk.internal.org.objectweb.asm.Type;
-
 //Exodus Unified Main Code
 public class Exodus {
     public static void main(String[] args) {
