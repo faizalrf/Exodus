@@ -13,7 +13,7 @@ public class Exodus {
         System.out.println("██║ ╚═╝ ██║██║  ██║██║  ██║██║██║  ██║██████╔╝██████╔╝    ███████╗██╔╝ ██╗╚██████╔╝██████╔╝╚██████╔╝███████║");
         System.out.println("╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═════╝ ╚═════╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚══════╝");
         System.out.println("\n\n");
-        
+
         if (args.length == 1) {
             CommandLineParam = args[0].toLowerCase();
         }
